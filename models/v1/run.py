@@ -1,6 +1,9 @@
-"""Run the unchanged V1.4 estimator; also score/read legacy root-level logs."""
+"""Run V1 direct 1/5/20-session forecasts; also score legacy root-level logs."""
 import argparse
-import main as v1
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+import multihorizon as v1
 from config import ROOT, PRED, EVAL
 
 _original_evaluate=v1.evaluate_previous_forecasts
@@ -19,11 +22,11 @@ def evaluate_both(px,market):
     return result
 
 
-def duplicate_in_either(market,date):
+def duplicate_in_either(market,date,*args,**kwargs):
     try:
         for folder in [PRED,ROOT/'predictions']:
             v1.PRED=folder
-            if _original_duplicate(market,date): return True
+            if _original_duplicate(market,date,*args,**kwargs): return True
         return False
     finally:
         v1.PRED=PRED
@@ -31,8 +34,18 @@ def duplicate_in_either(market,date):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--market',choices=['JP','US'],required=True)
+    parser.add_argument('--market',choices=['JP','US','BOTH'],required=True)
+    parser.add_argument('--horizons',nargs='+',type=int,choices=[1,5,20],default=[1,5,20])
+    parser.add_argument('--evaluate-only',action='store_true')
     args=parser.parse_args()
     v1.evaluate_previous_forecasts=evaluate_both
     v1.already_forecast=duplicate_in_either
-    v1.run(args.market)
+    failed=[]
+    for market in (['JP','US'] if args.market=='BOTH' else [args.market]):
+        try:
+            v1.run(market,horizons=args.horizons,evaluate_only=args.evaluate_only)
+        except Exception as exc:
+            print(f'{market}: {type(exc).__name__}: {exc}',file=sys.stderr,flush=True)
+            failed.append(market)
+    if failed:
+        raise SystemExit('V1 failed markets: '+', '.join(failed))
