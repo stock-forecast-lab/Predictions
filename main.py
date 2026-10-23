@@ -21,9 +21,29 @@ FEATURES = ['ret1','ret5','ret20','ret60','mom20','mom60','vol20','vol60','vol_z
 
 
 def us_tickers():
-    tables = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')
-    t = tables[0]['Symbol'].astype(str).str.replace('.', '-', regex=False).tolist()
-    return sorted(set(t))
+    """Retrieve the S&P 500 universe from a CSV hosted on GitHub.
+
+    Wikipedia rejects automated HTML scraping with HTTP 403 on some runners.
+    Dataset source: https://github.com/datasets/s-and-p-500-companies
+    Do not silently substitute a smaller sample if retrieval fails.
+    """
+    url = ('https://raw.githubusercontent.com/datasets/'
+           's-and-p-500-companies/main/data/constituents.csv')
+    try:
+        constituents = pd.read_csv(url)
+    except Exception as exc:
+        raise RuntimeError(
+            'Could not retrieve the S&P 500 universe CSV from GitHub. '
+            'Please retry later and check network access to raw.githubusercontent.com.'
+        ) from exc
+    if 'Symbol' not in constituents.columns:
+        raise RuntimeError('S&P 500 constituent CSV does not contain a Symbol column.')
+    tickers = sorted(set(constituents['Symbol'].dropna().astype(str)
+                         .str.strip().str.replace('.', '-', regex=False)))
+    if not 450 <= len(tickers) <= 550:
+        raise RuntimeError(f'Unexpected S&P 500 constituent count: {len(tickers)}')
+    print(f'Loaded {len(tickers)} S&P 500 tickers from the GitHub CSV source')
+    return tickers
 
 
 def jp_tickers():
