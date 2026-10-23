@@ -1,0 +1,93 @@
+name: Export V3 inputs for V4
+on:
+  workflow_dispatch:
+    inputs:
+      market:
+        description: Market
+        type: choice
+        options: [JP, US, BOTH]
+        default: BOTH
+      base_set:
+        description: V3 information set
+        type: choice
+        options: [M3, M2, M1]
+        default: M3
+  workflow_run:
+    workflows: [V3 daily forecast]
+    types: [completed]
+permissions:
+  contents: write
+concurrency:
+  group: v4-input-export-${{ github.repository }}
+  cancel-in-progress: false
+jobs:
+  export:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == github.event.repository.default_branch &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Export the shared JP/US input
+        env:
+          MARKET: ${{ inputs.market || 'BOTH' }}
+          BASE_SET: ${{ inputs.base_set || vars.V4_BASE_SET || 'M3' }}
+        run: python scripts/export_v4_inputs.py --market "$MARKET" --base-set "$BASE_SET"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v4-inputs-${{ github.run_id }}
+          path: v4_inputs/
+          if-no-files-found: ignore
+      - name: Save complete inputs on the default branch
+        id: publish
+        if: always()
+        env:
+          TARGET_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          if [[ ! -d v4_inputs ]]; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- v4_inputs
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "data: export V3 inputs for V4 $GITHUB_RUN_ID"
+          for attempt in 1 2 3; do
+            git pull --rebase origin "$TARGET_BRANCH"
+            if git push origin "HEAD:$TARGET_BRANCH"; then exit 0; fi
+          done
+          exit 1
+      - name: Start V4 for each market exported by this run
+        if: always() && steps.publish.outcome == 'success' && vars.ENABLE_V4_DISPATCH == 'true' && vars.V4_REPOSITORY != ''
+        env:
+          GH_TOKEN: ${{ secrets.V4_DISPATCH_TOKEN }}
+          V4_REPOSITORY: ${{ vars.V4_REPOSITORY }}
+          V4_BRANCH: ${{ vars.V4_BRANCH || 'main' }}
+        run: |
+          python - <<'PY'
+          import json,os,subprocess
+          from pathlib import Path
+          for market in ['JP','US']:
+              path=Path('v4_inputs')/market/'manifest.json'
+              if not path.exists():continue
+              meta=json.loads(path.read_text())
+              if meta.get('export_run_id')!=os.environ['GITHUB_RUN_ID']:continue
+              subprocess.run(['gh','workflow','run','forecasting.yml',
+                  '--repo',os.environ['V4_REPOSITORY'],'--ref',os.environ['V4_BRANCH'],
+                  '-f','operation=live','-f','model=both','-f','market='+market,
+                  '-f','profile=standard'],check=True)
+          PY
