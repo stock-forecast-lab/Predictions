@@ -79,7 +79,7 @@ jobs:
             if [[ "$SCHEDULE" == '30 8 * * 1-5' ]]; then market=JP; else market=US; fi
           fi
           base="${REQUESTED_BASE:-M3}"
-          profile="${REQUESTED_PROFILE:-light}"
+          profile="${REQUESTED_PROFILE:-standard}"
           days="${REQUESTED_DAYS:-730}"
           args=(--base-set "$base" --profile "$profile" --max-scan-days "$days")
           if [[ "$REQUESTED_MODE" == sync ]]; then args+=(--sync-only); fi
