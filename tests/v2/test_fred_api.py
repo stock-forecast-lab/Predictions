@@ -64,3 +64,60 @@ def test_window_boundary_snapshots_preserve_point_in_time_values(monkeypatch,tmp
     a=pd.merge_asof(timeline,actual,left_on='t',right_on='available_at')
     b=pd.merge_asof(timeline,expected,left_on='t',right_on='available_at')
     pd.testing.assert_series_equal(a.value,b.value)
+
+
+ABSENT='Bad Request. The series does not exist in ALFRED but may exist in FRED.'
+
+
+def test_archive_beginning_after_first_window_is_not_a_missing_series(monkeypatch,tmp_path):
+    monkeypatch.setenv('FRED_API_KEY','TEST_ONLY')
+    requests=[]
+    row={'date':'2018-06-01','realtime_start':'2018-07-17',
+         'realtime_end':'2026-10-23','value':'2.4'}
+    def get(url,params,timeout):
+        requests.append(dict(params))
+        if params['realtime_end']<'2018-07-17':
+            return SimpleNamespace(status_code=400,json=lambda:{'error_message':ABSENT})
+        return SimpleNamespace(status_code=200,json=lambda:{'count':1,'observations':[row]})
+    monkeypatch.setattr(context_data.requests,'get',get)
+    rows=context_data.fetch_vintages('JPNPRINTO01GYSAM','2013-01-01','2026-10-23',tmp_path)
+    assert row in rows
+    assert [p['realtime_start'] for p in requests]==['2013-01-01','2018-01-01','2023-01-01']
+    events=context_data.vintage_events(rows)
+    assert events.available_at.min()==pd.Timestamp('2018-07-19',tz='UTC')
+    # Early history is absent; it is never fabricated using current values.
+    assert not (events.available_at<pd.Timestamp('2018-07-17',tz='UTC')).any()
+
+
+def test_no_archive_in_any_window_remains_fatal_and_uncached(monkeypatch,tmp_path):
+    monkeypatch.setenv('FRED_API_KEY','TEST_ONLY')
+    monkeypatch.setattr(context_data.requests,'get',lambda *a,**k:SimpleNamespace(
+        status_code=400,json=lambda:{'error_message':ABSENT}))
+    with pytest.raises(RuntimeError,match='does not exist in ALFRED'):
+        context_data.fetch_vintages('MISSING','2013-01-01','2026-10-23',tmp_path)
+    assert not list(tmp_path.glob('*.json'))
+
+
+def test_unrelated_400_never_skips_an_early_window(monkeypatch,tmp_path):
+    monkeypatch.setenv('FRED_API_KEY','TEST_ONLY')
+    calls=[]
+    def get(*a,**k):
+        calls.append(1)
+        return SimpleNamespace(status_code=400,json=lambda:{'error_message':'api_key is invalid'})
+    monkeypatch.setattr(context_data.requests,'get',get)
+    with pytest.raises(RuntimeError,match='api_key is invalid'):
+        context_data.fetch_vintages('DGS2','2013-01-01','2026-10-23',tmp_path)
+    assert len(calls)==1
+
+
+def test_partial_window_error_cannot_silently_truncate_history(monkeypatch,tmp_path):
+    monkeypatch.setenv('FRED_API_KEY','TEST_ONLY')
+    def get(url,params,timeout):
+        if params['offset']:
+            return SimpleNamespace(status_code=400,json=lambda:{'error_message':ABSENT})
+        return SimpleNamespace(status_code=200,json=lambda:{'count':2,'observations':[
+            {'date':'2013-01-01','realtime_start':'2013-01-02','value':'1'}]})
+    monkeypatch.setattr(context_data.requests,'get',get)
+    with pytest.raises(RuntimeError):
+        context_data.fetch_vintages('DGS2','2013-01-01','2026-10-23',tmp_path)
+    assert not list(tmp_path.glob('*.json'))
