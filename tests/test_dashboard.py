@@ -143,7 +143,11 @@ def test_two_workflows_have_independent_commands_and_shared_concurrency():
         assert f'python models/{version}/' in run
         assert workflow['concurrency']['cancel-in-progress'] is False
         assert any('dashboard.normalize' in s.get('run','') for s in steps)
-        assert any('dashboard/data.json' in s.get('run','') for s in steps)
+        assert any('scripts/publish_results.py' in s.get('run','') for s in steps)
+        backup=next(i for i,s in enumerate(steps) if s.get('uses','').startswith('actions/upload-artifact@'))
+        publish=next(i for i,s in enumerate(steps) if 'scripts/publish_results.py' in s.get('run',''))
+        assert backup<publish
+        assert 'dashboard/data.json' in steps[backup]['with']['path']
 
 
 def test_optional_jquants_topix_and_topix500_pagination(tmp_path,monkeypatch):

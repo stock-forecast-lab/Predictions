@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 import os
+from time import perf_counter
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -10,7 +11,7 @@ from config import ROOT, START, VERSION, HORIZONS, MIN_HISTORY
 from context_data import context_features
 from features import make_panel, training_rows, MARKET_FEATURES
 from market_data import completed_schedule, universe, prices
-from models import predict
+from models import predict, profile_settings
 from storage import save_bundle, bundles, evaluate, now_utc, forecast_tickers
 from metrics import summarize
 
@@ -20,7 +21,7 @@ def information_sets(m2, m3):
 
 
 def forecast_origin(panel, cutoff, horizons, sets, columns, names, train_sessions=756,
-                    min_history=MIN_HISTORY, quick=False):
+                    min_history=MIN_HISTORY, quick=False, profile='standard'):
     # Matched samples ensure the M1/M2/M3 comparison measures the extra information,
     # not a different set of stocks or a different training period.
     all_cols = list(dict.fromkeys(c for s in sets for c in columns[s]))
@@ -34,7 +35,8 @@ def forecast_origin(panel, cutoff, horizons, sets, columns, names, train_session
             dates = sorted(tr.date.unique())[-train_sessions:]
             tr = tr[tr.date.isin(dates)]
         for s in sets:
-            predictions = predict(tr,te,columns[s],f'target_{h}',names,quick)
+            print(f'Forecast horizon={h}, set={s}, profile={profile}',flush=True)
+            predictions = predict(tr,te,columns[s],f'target_{h}',names,quick,profile)
             for model, values in predictions.items():
                 z = te[['date','ticker','Close',f'target_{h}']].copy()
                 z = z.rename(columns={'Close':'close_at_forecast',f'target_{h}':'actual'})
@@ -58,7 +60,7 @@ def backtest(panel, market, sets, columns, args, root):
             origins = origins[:args.max_origins]
         for number,day in enumerate(origins,1):
             print(f'Backtest {market} h={h}: {number}/{len(origins)} {day.date()}',flush=True)
-            z = forecast_origin(panel,day,[h],sets,columns,args.models,args.train_sessions)
+            z = forecast_origin(panel,day,[h],sets,columns,args.models,args.train_sessions,profile=getattr(args,'profile','standard'))
             outputs.append(z.dropna(subset=['actual']))
     if not outputs:
         raise RuntimeError('No mature backtest observations; change --backtest-start')
@@ -78,7 +80,10 @@ def backtest(panel, market, sets, columns, args, root):
 
 
 def settings(args):
-    return {k:getattr(args,k) for k in ['sets','horizons','models','train_sessions']}
+    result = {k:getattr(args,k) for k in ['sets','horizons','models','train_sessions']}
+    result['profile'] = getattr(args,'profile','standard')
+    result['estimator_parameters'] = profile_settings(result['profile'])
+    return result
 
 
 def run(args):
@@ -92,16 +97,24 @@ def run(args):
     # Delisted/unavailable quotes remain pending, but an ordinary index removal
     # must not prevent an already-created forecast from reaching evaluation.
     quote_tickers = sorted(set(tickers) | forecast_tickers(root,args.market))
+    started = perf_counter()
+    print(f'Downloading prices for {len(quote_tickers)} tickers',flush=True)
     px = prices(quote_tickers,START,cutoff)
+    print(f'Price download: {perf_counter()-started:.1f}s',flush=True)
     px = px[px.date.isin(complete.index)]
     observed = set(px.loc[px.date==cutoff,'ticker']) & set(tickers)
     if len(observed)<np.ceil(.95*len(tickers)):
         raise RuntimeError(f'Latest completed session {cutoff.date()}: coverage {len(observed)}/{len(tickers)} below 95%')
     cache = root/'data/context_cache'
+    started = perf_counter()
+    print('Preparing context data',flush=True)
     ctx,m2,m3,evidence = context_features(complete.market_close,args.market,args.sets,
         (pd.Timestamp(START)-pd.DateOffset(years=2)).date().isoformat(),
         pd.Timestamp.now(tz='UTC').date().isoformat(),cache)
+    print(f'Context data: {perf_counter()-started:.1f}s',flush=True)
+    started = perf_counter()
     panel = make_panel(px[px.ticker.isin(tickers)],complete.index,args.horizons).merge(ctx,on='date',how='left',validate='many_to_one')
+    print(f'Feature preparation: {perf_counter()-started:.1f}s',flush=True)
     columns = information_sets(m2,m3)
     ev = evaluate(px,args.market,root)
     if ev:
@@ -116,7 +129,7 @@ def run(args):
             manifest.get('settings_sha256')==signature and manifest.get('model_version')==VERSION):
             print(f'Already forecast: {args.market} {cutoff.date()} {VERSION}; no duplicate generated.')
             return
-    result = forecast_origin(panel,cutoff,args.horizons,args.sets,columns,args.models,args.train_sessions)
+    result = forecast_origin(panel,cutoff,args.horizons,args.sets,columns,args.models,args.train_sessions,profile=getattr(args,'profile','standard'))
     if result.ticker.nunique()<np.ceil(.95*len(tickers)):
         raise RuntimeError('Complete-feature forecast coverage below 95%; no forecast saved')
     targets = {}
@@ -144,6 +157,7 @@ def arguments():
     ap.add_argument('--market',choices=['JP','US'],required=True)
     ap.add_argument('--sets',nargs='+',choices=['M1','M2','M3'],default=['M1','M2','M3'])
     ap.add_argument('--horizons',nargs='+',type=int,choices=HORIZONS,default=list(HORIZONS))
+    ap.add_argument('--profile',choices=['light','standard'],default='standard',help='Light reduces RF/XGB capacity; recorded separately from standard forecasts')
     ap.add_argument('--models',nargs='+',choices=['HistoricalMean','OLS','Ridge','Lasso','ElasticNet','RF','XGB'])
     ap.add_argument('--train-sessions',type=int,default=756,help='Trailing matured training sessions; 0=expanding')
     ap.add_argument('--backtest',action='store_true')

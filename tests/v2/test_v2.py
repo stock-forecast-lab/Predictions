@@ -219,3 +219,25 @@ def test_legacy_v2_evaluation_remains_a_done_key_after_reorganization(tmp_path):
     legacy=tmp_path/'output/v2/evaluations/US';legacy.mkdir(parents=True)
     for path in [saved,saved.with_suffix('.json')]: path.rename(legacy/path.name)
     assert evaluate(px,'US',tmp_path) is None
+
+
+def test_light_profile_preserves_targets_and_records_distinct_settings():
+    from argparse import Namespace
+    from main import settings
+    from models import profile_settings
+    dates=pd.bdate_range('2020-01-01',periods=420)
+    panel=make_panel(synthetic_prices(dates),dates)
+    cols=information_sets([],[])
+    light=forecast_origin(panel,dates[380],[1,5,20],['M1'],cols,['RF','XGB'],profile='light')
+    assert set(light.horizon)=={1,5,20}
+    assert light.ticker.nunique()==6
+    assert set(light.model)=={'RF','XGB','Ensemble'}
+    assert np.isfinite(light.prediction).all()
+    assert (light.train_last_label_end<dates[380]).all()
+    common=dict(sets=['M1'],horizons=[1,5,20],models=None,train_sessions=756)
+    standard=settings(Namespace(**common,profile='standard'))
+    fast=settings(Namespace(**common,profile='light'))
+    assert standard!=fast
+    assert standard['train_sessions']==fast['train_sessions']==756
+    assert standard['horizons']==fast['horizons']
+    assert fast['estimator_parameters']==profile_settings('light')
