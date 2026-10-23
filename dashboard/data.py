@@ -52,6 +52,9 @@ def load_forecasts(root):
     if not frames:
         return pd.DataFrame()
     f=pd.concat(frames,ignore_index=True)
+    # Retired one-run V1.1 trial is excluded from display AND matched universes.
+    # Original files and existing canonical archives remain read-only.
+    f=f[f.version!='v1.1-actions']
     if (~np.isfinite(f.prediction)).any():
         raise ValueError('Forecast contains non-finite predictions')
     if (pd.to_datetime(f.target)<=pd.to_datetime(f.origin)).any():
