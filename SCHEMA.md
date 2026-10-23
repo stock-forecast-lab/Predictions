@@ -9,10 +9,10 @@
 | forecast_id | 保存元・銘柄・期間・情報集合・モデルから作るSHA-256識別子 |
 | source_forecast_file | 元の予測ファイルへの相対パス |
 | market | `JP` / `US` |
-| system_version | `V1` / `V2` / 将来の `V3`〜`V5` |
+| system_version | `V1` / `V2` / `V3` / 将来の `V4`・`V5` |
 | model_version | `v1.4-topix500-membership` / `v2.0.0` などの実装版 |
 | model | `OLS`, `Ridge`, `Lasso`, `RF`, `XGB`, `Ensemble` など |
-| information_set | `M1`, `M2`, `M3`。将来の追加ラベルも保存可能 |
+| information_set | `M1`, `M2`, `M3`, `M3_CONTROL`, `M3_FINANCIAL` など |
 | horizon_sessions | 取引所営業日で数えた期間。現行は `1` / `5` / `20` |
 | ticker | 文字列。日本株の `.T`、米国株の記号を維持 |
 | forecast_created_at_utc | 予測を作成したUTC時刻 |
@@ -28,13 +28,13 @@
 ## 現行コードとの接続
 
 - V1の推定コードは変更せず、元のwide形式（各モデルが列）のまま保存。
-- V2はlong形式（`prediction`, `horizon`）で保存。
+- V2・V3はlong形式（`prediction`, `horizon`）で保存。
 - `dashboard/normalize.py` が両形式を上表の共通形式に変換し、
   `records/predictions/` と `records/evaluations/` に追記。
 - V1の評価CSVにEnsembleの実績しかなくても、同じ元予測ファイル・銘柄・期間の実績を
   各モデルの予測に結び付けます。実績値そのものをモデルごとに作り直しません。
 - 初回の正規化後は元ファイルと正規化ファイルのSHA-256を検証し、変更を検出したら停止。
-- V3〜V5はこの共通形式で `predictions/v3/JP/` 等に出力すれば、同じアダプタで表示可能。
+- V3はこの共通形式で保存します。将来のV4・V5も各版の `predictions/v4/JP/` 等に出力すれば、同じアダプタで表示可能。
   評価は既存と同じlong形式で `evaluations/v3/` 等に追加してください。
   `horizon_sessions`/`predicted_return` とV2の別名 `horizon`/`prediction` の両方を読めます。
 
@@ -56,3 +56,11 @@
 V1は元の仕様どおり1営業日先のみです。V2の5・20日先にV1の実績を流用しません。
 版の差には特徴量だけでなく学習期間・ラベル処理等の差が含まれます。
 予測力の差と、追加情報の因果効果は区別してください。
+
+## V3の追加監査情報
+
+V3の元予測CSVには `fin_source_ids`、`train_rows`、`train_sessions`、`train_start`、`train_end`、
+`train_last_label_end`、`training_sample_sha256` を保存します。
+同じ予測期間のCONTROL／FINANCIALは同じ学習サンプルハッシュを持ちます。
+JSONには設定ハッシュ、金融・マクロ出典、対象集合、財務カバレッジ、
+予測時点特徴量CSVの相対パスとSHA-256を記録します。元の監査情報は共通集計後も保持されます。

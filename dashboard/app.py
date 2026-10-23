@@ -89,7 +89,7 @@ def dashboard():
     generated=pd.Timestamp(data['generated_at_utc']).tz_convert('Asia/Tokyo').strftime('%Y-%m-%d %H:%M JST')
     st.caption(f'データ更新：{generated} ｜ 画面は60秒ごとに保存済みスナップショットを確認します。')
     if not data['series']:
-        st.info('まだ予測履歴がありません。GitHub ActionsでV1・V2を実行すると自動反映されます。画面例は上のスイッチで確認できます。')
+        st.info('まだ予測履歴がありません。GitHub ActionsでV1・V2・V3を実行すると自動反映されます。画面例は上のスイッチで確認できます。')
         return
     cols=st.columns(5)
     market=cols[0].selectbox('市場',['JP','US'],format_func=lambda x:'日本 / TOPIX 500銘柄' if x=='JP' else '米国 / S&P 500銘柄')
@@ -98,7 +98,9 @@ def dashboard():
     horizon=cols[1].selectbox('予測期間',horizons or [1],format_func=lambda x:f'{x}営業日先')
     specs=sorted(set(s['version']+'|'+s['spec'] for s in available))
     spec=cols[2].selectbox('バージョン / 設定',['ALL']+specs,format_func=lambda x:'すべて' if x=='ALL' else x.replace('|',' / '))
-    info=cols[3].selectbox('情報集合',['ALL','M1','M2','M3'],index=1,format_func=lambda x:{'ALL':'すべて','M1':'M1 / 市場','M2':'M2 / 為替・金利','M3':'M3 / マクロ'}[x])
+    info_options=['ALL']+sorted(set(s['information_set'] for s in available if spec=='ALL' or s['version']+'|'+s['spec']==spec))
+    info_names={'ALL':'すべて','M1':'M1 / 市場','M2':'M2 / 為替・金利','M3':'M3 / マクロ'}
+    info=cols[3].selectbox('情報集合',info_options,index=0,format_func=lambda x:info_names.get(x,x.replace('_CONTROL',' / 企業情報なし').replace('_FINANCIAL',' / 企業情報あり')))
     sample=cols[4].selectbox('比較サンプル',['matched','full'],format_func=lambda x:'共通銘柄' if x=='matched' else '各予測の全銘柄')
     model_options=sorted(set(s['model'] for s in available))
     selected=st.multiselect('表示モデル',model_options,default=[m for m in DEFAULT_MODELS if m in model_options] or model_options)
@@ -224,7 +226,7 @@ def dashboard():
     with st.expander('集計定義・比較条件'):
         for note in data['notes']: st.write('・'+note)
         st.write('V1の学習・モデル仕様とV2のM1は別です。版ごとの成績差が、追加特徴量だけの因果効果を示すわけではありません。')
-        st.write('V3〜V5は共通スキーマの実績が追加された時点で表示されます。未開発モデルの実績は作りません。')
+        st.write('V3のCONTROL/FINANCIALは同じ学習行で企業情報の有無を比較します。V4・V5は共通形式の履歴が追加された時点で表示します。')
 
 
 dashboard()

@@ -115,9 +115,9 @@ def demo_data():
                 origin,target=dates[i],dates[i+h]
                 market_actual=levels[i+h]/levels[i]-1
                 actuals=market_actual+rng.normal(0,.012*np.sqrt(h),len(stocks))
-                for version in ['DEMO V1','DEMO V2']:
+                for version in ['DEMO V1','DEMO V2','DEMO V3']:
                     if version=='DEMO V1' and h!=1: continue
-                    for info in (['M1'] if version=='DEMO V1' else ['M1','M2','M3']):
+                    for info in (['M1'] if version=='DEMO V1' else ['M3_CONTROL','M3_FINANCIAL'] if version=='DEMO V3' else ['M1','M2','M3']):
                         for j,model in enumerate(['OLS','Ridge','Lasso','RF','XGB','Ensemble']):
                             pred=.25*market_actual+rng.normal(0,(.006 if version=='DEMO V2' else .009)*np.sqrt(h),len(stocks))
                             for ticker,a,p in zip(stocks,actuals,pred):

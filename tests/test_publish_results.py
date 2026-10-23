@@ -64,5 +64,26 @@ class PublishTests(unittest.TestCase):
             self.assertEqual((other / 'predictions/same.csv').read_text(), 'remote')
             self.assertEqual((original / 'predictions/same.csv').read_text(), 'local')
 
+    def test_retry_when_remote_advances_at_push(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as t:
+            original, other = self.fixture(Path(t))
+            (original / 'predictions/local.csv').write_text('local')
+            original_git = module.git
+            raced = []
+            def concurrent(root, *args, **kwargs):
+                if args and args[0] == 'push' and not raced:
+                    raced.append(True)
+                    (other / 'predictions/race.csv').write_text('remote during push')
+                    git(other, 'add', '.')
+                    git(other, 'commit', '-m', 'racing publisher')
+                    git(other, 'push')
+                return original_git(root, *args, **kwargs)
+            with patch.object(module, 'git', side_effect=concurrent):
+                module.publish(original, 'integration/test', 'results')
+            git(other, 'pull', '--ff-only')
+            self.assertEqual((other / 'docs/index.html').read_text(), 'local.csv|old.csv|race.csv')
+            self.assertTrue((other / 'predictions/race.csv').exists())
+
 if __name__ == '__main__':
     unittest.main()

@@ -1,0 +1,35 @@
+name: V3 daily forecast
+on:
+  workflow_dispatch:
+    inputs:
+      market:
+        description: Market
+        type: choice
+        options: [JP, US, BOTH]
+        default: JP
+      mode:
+        description: sync builds history; forecast syncs then estimates when ready
+        type: choice
+        options: [forecast, sync]
+        default: forecast
+      base_set:
+        description: V2 information set for the matched control
+        type: choice
+        options: [M3, M2, M1]
+        default: M3
+      profile:
+        description: Model capacity
+        type: choice
+        options: [light, standard]
+        default: light
+      max_scan_days:
+        description: EDINET historical calendar days per run (progress is retained)
+        type: number
+        default: 730
+permissions:
+  contents: read
+jobs:
+  registration:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo 'Registration only. Use Run workflow and select integration/v2-dashboard to run the V3 implementation.'

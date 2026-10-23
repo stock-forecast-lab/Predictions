@@ -1,53 +1,62 @@
-# 統合ブランチでの導入
+# V1・V2・V3統合 / 20261024-v3-r1
 
-稼働中のmainは保ち、GitHub上で `integration/v2-dashboard` などのブランチを作成してください。
-この成果物はリポジトリへの直接反映・マージ・公開を行っていません。
+今回の更新は**全ファイル入りの完全版**です。以前のパッチを適用する必要はありません。
+**アップロード・Secrets設定・V3の実行手順は [INSTALL_V3.md](INSTALL_V3.md) を参照してください。**
 
-1. 統合ブランチに、このフォルダの**中身**を配置します。
-   `models/v1/`〜`models/v5/`、`dashboard/`、`tests/`、`.github/` 等が直下になります。
-2. 既存の `predictions/JP/`・`US/`、`output/evaluations/`、
-   `predictions/v2/`、`output/v2/evaluations/`、`data/universes/` は、そのまま残します。
-   既存CSV・JSON内の相対パスを壊さないため、移動・改名しません。
-3. 旧 `.github/workflows/market-forecast.yml` は付属の案内用ワークフローへ置き換えます。
-   統合ブランチには予約実行がないため、mainの旧V1はこの時点では影響を受けません。
-   別名の旧予測ワークフローがある場合、マージ時の二重実行を避けるため停止設定も用意します。
-4. Actionsで `V1 daily forecast` を選び、統合ブランチ・市場JPを手動実行。
-   元のV1推定コードを使って `predictions/v1/JP/` に新規出力されることを確認します。
-   旧履歴に同じ版・観測日の予測が既にある場合、重複作成を避けてスキップします。
-5. `V2 daily forecast` を統合ブランチで手動実行。
-   初回は `M1`、FREDキー登録後は `ALL` を選択します。
-6. `predictions/v2/`、`evaluations/`、`records/`、`dashboard/data.json`、
-   Actions artifactの `docs/index.html` を確認します。
-   初日の未実現値は空欄が正常です。5日先・20日先は満期まで照合されません。
-7. Streamlitアプリのエントリを `dashboard/app.py`、対象を統合ブランチとして設定して確認。
-   本番用とは別アプリで確認するか、ローカルで `python -m streamlit run dashboard/app.py` を実行します。
-8. 外部取得・保存・グラフ反映が確認できたらmainへマージ。
-   Streamlitをmainへ接続し、V1/V2の両予約ワークフローが有効なことを確認します。
+## 配置と履歴の扱い
+
+ZIPを展開した中身を `integration/v2-dashboard` の直下に置きます。
+`models/`、`data/`、`predictions/`、`evaluations/`、`dashboard/`、`tests/`、`.github/` が同じ階層です。
+V4・V5の追加先は `.gitkeep` で保持します。V3には今回実装が入りました。
+
+既存の `predictions/JP/`・`US/`、`output/evaluations/`、`predictions/v2/`、
+`output/v2/evaluations/`、`data/universes/` と新しい履歴は、削除・移動・改名しません。
+元のCSVやJSONにある相対パスを維持します。旧形式も共通の読み込み処理が参照します。
+V1の元の評価結果を、別の価格・ラベル処理で書き換えることはしません。
+
+## 版の分離
+
+- V1：動作版の推定コードを `models/v1/main.py` に維持。ラッパーの `run.py` から実行します。
+- V2：従来の情報集合M1/M2/M3、light/standard、FRED修正、保存競合対策を含みます。
+- V3：V2のエンジンを専用ブリッジ経由で読み、同一学習サンプルに企業情報を追加して比較します。
+  V2の推定コードは書き換えず、V3固有の取得・時点整合・保存を `models/v3/` に分離します。
+- 共通部分：履歴読み込み・正規化・実績集計・Web画面。
+
+V3 CONTROLはV3内の比較用推定です。V2本体の保存済み予測と同じ結果になる保証はありません。
+V1との比較は共通する1営業日先に限定し、共通銘柄・日付・リターン定義を確認してください。
+
+## GitHub Actions
+
+V1/V2/V3を別のワークフローで動かします。同じ版・ブランチの多重実行をconcurrencyで制限します。
+版をまたいだ長時間の取得待ちを避けるため、全版を単一のconcurrencyグループにはしていません。
+同時保存は `scripts/publish_results.py` が最新HEADに新規履歴を追加して処理します。
+生成HTMLをrebaseせずに再生成し、push時に先行更新があれば再試行します。同名で内容が異なる不変履歴は停止します。
+Artifactsを先にアップロードするため、コミットが失敗しても出力を取り出せます。
+
+旧 `.github/workflows/market-forecast.yml` は同梱の案内用定義です。
+mainへ統合する際は、別名の古い予約予測が残っていないかも確認してください。
+GitHubのWorkflow permissionsはリポジトリへの書込みが許可された設定にします。
+組織のブランチ保護等によりpushできない場合はArtifactsから出力を確認してください。
 
 ## ローカル検証
 
-プロジェクト直下で実行します。
+Python 3.12、プロジェクト直下で実行します。
 
 ```bash
 pip install -r requirements.txt
-python -m pytest -q
-python models/v1/run.py --help
-python models/v2/main.py --help
+python scripts/verify_release.py
+python scripts/run_tests.py
+python -m models.v3.demo --market BOTH
+python -m models.v3.main --market JP --base-set M1 --sync-only
+python -m models.v3.main --market JP --base-set M3 --profile light
 python -m dashboard.normalize
 python -m dashboard.build
 python -m streamlit run dashboard/app.py
 ```
 
-元のroot `main.py`・`config.py` 等が残っていても、新しいワークフローは呼びません。
-稼働確認後に必要に応じて別途整理してください。過去履歴を削除する手順は含みません。
+V2は `python models/v2/main.py ...`、V3は **`python -m models.v3.main ...`** です。
+旧V2のimport構成と混ざらないよう、共通・V2・V3テストは別プロセスで実行します。
+通常の `pytest` は共通テストのみです。全検証には `scripts/run_tests.py` を使います。
 
-## 旧V2履歴の移行上の注意
-
-旧 `predictions/v2/` はそのまま継続して読みます。
-旧 `output/v2/evaluations/` も共通ビュー・正規化で読みます。
-新しいV2の実績保存先は `evaluations/v2/` です。
-旧評価を新保存先の既評価キーとして扱う互換処理を含み、同じ予測を再評価しません。
-
-V1の実績CSVは元仕様に従います。将来の調整価格の訂正などによる違いを消すために、
-元のV1評価をV2の方式で勝手に書き換えることはしません。
-その制約を理解して、同じ期間・銘柄・リターン定義で比較してください。
+サイト公開やリポジトリへの反映は、このZIPを受け取っただけでは行われません。
+Streamlitは `dashboard/app.py` をエントリに指定し、APIキーを渡さず保存済み結果を表示します。

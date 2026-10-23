@@ -133,7 +133,7 @@ def test_live_v1_estimator_file_is_byte_for_byte_reference():
     assert hashlib.sha256((root/'models/v1/main.py').read_bytes()).hexdigest()==expected
 
 
-def test_two_workflows_have_independent_commands_and_shared_concurrency():
+def test_two_workflows_have_independent_commands_and_safe_publish_order():
     import yaml
     root=Path(__file__).resolve().parents[1]
     for version in ['v1','v2']:

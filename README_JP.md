@@ -1,11 +1,15 @@
-# 株価予測システム / V1・V2並行運用＋共通Streamlitダッシュボード
+> 完全版 **20261024-v3-r1**。更新・実行は [INSTALL_V3.md](INSTALL_V3.md) を参照してください。
+> V1・V2・V3・共通ダッシュボード・Actionsを含みます。過去のパッチ追加は不要です。
+> V3は日本EDINET／米国SECの公表履歴を使用し、企業情報あり・なしを同条件で比較します。
+
+# 株価予測システム / V1・V2・V3並行運用＋共通Streamlitダッシュボード
 
 動作確認済みV1.4を残し、V2を独立した自動実行として追加しました。
-Web画面・保存形式はV1〜V5共通です。V3〜V5は追加先のフォルダを用意しています。推定器はまだ含まず、共通スキーマで後から追加できます。
+Web画面・保存形式はV1〜V5共通です。V3の財務情報追加モデルを実装しました。V4・V5は空の追加先を用意しています。
 
 ## できること
 
-- V1・V2をそれぞれ日米の引け後に自動実行。
+- V1・V2・V3をそれぞれ独立して実行。V3は同じ学習行・予測銘柄で企業情報あり／なしを比較。
 - 市場・版・設定・情報集合・モデル・1/5/20日先を選んで比較。
 - モデル別平均予測、指数との参考差、個別株ランキング、実績照合、散布図。
 - RMSE・Rank ICのローリング推移。共通銘柄と各版の全銘柄を切り替え。共通銘柄モードは選択系列の評価期間もそろえます。
@@ -20,7 +24,7 @@ stock-forecast/
 ├── models/
 │   ├── v1/
 │   ├── v2/
-│   ├── v3/  (.gitkeep)
+│   ├── v3/  (企業財務情報)
 │   ├── v4/  (.gitkeep)
 │   └── v5/  (.gitkeep)
 ├── data/
@@ -40,11 +44,13 @@ stock-forecast/
 | `models/v1/main.py` | 送付された動作版V1.4の推定コードと同一 |
 | `models/v1/run.py` | 新保存先での実行、旧履歴の照合・重複予測の確認 |
 | `models/v2/main.py` | 為替・金利・マクロを追加したV2 |
+| `models/v3/main.py` | 日本EDINET・米国SECを追加するV3 |
 | `dashboard/app.py` | 共通Streamlit画面 |
 | `.github/workflows/v1-forecast.yml` | V1の自動実行 |
 | `.github/workflows/v2-forecast.yml` | V2の自動実行 |
-| `predictions/v1/`, `predictions/v2/` | 新しい版別予測ログ |
-| `evaluations/v1/`, `evaluations/v2/` | 版別の実績照合 |
+| `.github/workflows/v3-forecast.yml` | V3の財務取得・予測 |
+| `predictions/v1/`, `predictions/v2/`, `predictions/v3/` | 新しい版別予測ログ |
+| `evaluations/v1/`, `evaluations/v2/`, `evaluations/v3/` | 版別の実績照合 |
 | `records/` | 共通スキーマの追記専用予測・実績 |
 | `dashboard/data.json` | Web画面用集計。再生成可能 |
 | `docs/index.html` | 外部通信なしで開ける集計画面 |
@@ -57,7 +63,7 @@ V2のM1はV1とは別です。V1の比較系列として置き換えていませ
 
 ## GitHubへ配置
 
-1. ZIPを展開し、`stock_forecast_system` の**中身**を現在のリポジトリ直下にアップロード。
+1. ZIPを展開し、展開先の**中身**を現在のリポジトリ直下にアップロード。
    `predictions/`、`output/`、`data/universes/` にある既存履歴は削除しないでください。
 2. 同名の `.github/workflows/market-forecast.yml` を必ず付属版で更新。
    これは旧スケジュールを停止する案内用エントリです。
@@ -70,7 +76,7 @@ V2のM1はV1とは別です。V1の比較系列として置き換えていませ
    初回は市場を `JP` にすると切り分けやすく、その後 `US` も確認できます。
 
 予約時刻は両方とも07:30 UTC（16:30 JST、日本用）と22:30 UTC（米国の引け後）。
-同じリポジトリに同時書込みしないよう、同じconcurrencyグループで順番に実行します。
+V3は08:30 UTC・23:30 UTCです。版ごとのconcurrencyと、保存時の競合再試行を使います。
 V1とV2のジョブは独立しているため、V2がAPIキー不足で失敗してもV1の運用は続けられます。
 GitHubの予約実行・キューには遅延があり、稼働はActionsのログで確認してください。
 
@@ -144,7 +150,7 @@ V2の設定・系列・バックテストの詳細は `models/v2/README_JP.md` �
 V1は1営業日先、V2は1・5・20営業日先です。
 
 ```bash
-python -m pytest -q
+python scripts/run_tests.py
 ```
 
 通信なしの画面確認はStreamlitの「合成データで画面例を見る」を使えます。
@@ -158,4 +164,14 @@ python -m pytest -q
 導入後、まず手動実行で外部データ取得とログ保存を確認してください。
 
 V2は現在の構成銘柄と調整後価格を使うため、過去検証の生存者バイアス等は残ります。
-将来のV3〜V5も同じ [共通保存形式](SCHEMA.md) を利用できます。
+V3と将来のV4・V5も同じ [共通保存形式](SCHEMA.md) を利用できます。
+
+## V3の初回設定
+
+日本は `EDINET_API_KEY`、米国はアプリ名と実連絡先を入れた `SEC_USER_AGENT` をActions Secretsに設定します。
+M2/M3には既存の `FRED_API_KEY` も必要です。V3はまず `mode=sync` で履歴取得を確認してください。
+V3がActionsに表示されない場合のmainへの登録用ファイルも `setup/` に同梱しています。
+
+初回の財務取得は長くなる場合があります。取得不足は `BOOTSTRAP` と表示して予測を作らず、進捗だけを保存します。
+財務特徴量の年率換算・推計PER等の定義と制約は [V3仕様](models/v3/README_JP.md) を参照してください。
+実APIによる全銘柄実行と予測力の改善は未検証です。

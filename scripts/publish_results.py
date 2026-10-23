@@ -11,8 +11,8 @@ import subprocess
 import sys
 import tempfile
 
-PATHS = ['predictions', 'evaluations/v1', 'evaluations/v2', 'output/evaluations',
-         'data/universes', 'data/benchmarks', 'records']
+PATHS = ['predictions', 'evaluations/v1', 'evaluations/v2', 'evaluations/v3', 'output/evaluations',
+         'data/universes', 'data/benchmarks', 'data/fundamentals/v3', 'records']
 
 
 def git(root, *args, check=True):
