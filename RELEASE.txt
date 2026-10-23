@@ -1,4 +1,4 @@
-stock-forecast complete 20261024-v3-r1
-V1 + V2 + V3 + shared dashboard + workflows
-V3: JP EDINET / US SEC, matched CONTROL and FINANCIAL.
-Includes existing V2 FRED, profile and safe-publishing fixes. V4/V5 are placeholders.
+stock-forecast complete 20261024-v1-multihorizon-r2
+V1 direct 1/5/20-session cumulative returns + V2 + V3 + shared dashboard.
+V1 estimator/features reused unchanged; completed-session labels and immutable outcomes.
+V2/V3 default standard; Streamlit title and V1 display retained. V4/V5 placeholders.

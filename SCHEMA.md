@@ -1,3 +1,5 @@
+> V1拡張版：`v1.5-multihorizon` はhごとに別のワイドCSV＋ハッシュ付きJSONを保存します。予測に `horizon_sessions`、評価に `horizon` と `horizon_sessions` を持ち、旧V1の期間列なしCSVは1日先として読みます。
+
 # 共通保存形式 / schema_version 1
 
 予測は1行＝市場×観測日×銘柄×予測期間×版×情報集合×モデル。

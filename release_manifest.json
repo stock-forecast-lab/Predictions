@@ -1,16 +1,17 @@
 {
-  "release_id": "20261024-v3-r1",
+  "release_id": "20261024-v1-multihorizon-r2",
   "sha256": {
-    "RELEASE.txt": "dde86adc21b05d2a2e727f3a0076118b4b4070f8316aa33d2328fe4fa2d06960",
+    "RELEASE.txt": "c168bebffee6e574b1b3d584275004abd47b94c220c5e420df76cedd56ca7b26",
     "dashboard/__init__.py": "8b7da41b3d2bc387ad8a2a18fd768d1c7f58fb7ee96b9b8d5a40e4141db06326",
     "dashboard/build.py": "60c5223c79dbb8d0361505719149a427c3d81959d39b2c8eeee0b6956d579f74",
-    "dashboard/data.py": "cead9dd9265069be0619a1c1ef3936174359386da1893abc239c03f29674f391",
+    "dashboard/data.py": "1703235762ea9a58463e218d02fc2d394e2ffef70ce3da5d44fa6412b19e7bed",
     "dashboard/exchange_calendar.py": "028bf1a12c2f71c45171cbacddc3f3ae09fa3d09c2e2f4e3679ee8352d682fb9",
     "dashboard/normalize.py": "345a1358c884f334abd8d07a50648a9bce1b61fef6520af3714b087757c33b74",
     "dashboard/requirements.txt": "e9b656f65979e886891dd741f7b898265973d65476d49bb873640c85d962a55b",
     "models/v1/config.py": "18f01d780c4e507a5c75b79696fc4e3c7b76a16364cd95026e708c5c5712416a",
     "models/v1/main.py": "665656877e731573d6a63cbf49172734016fd2e796a642c6307bcf0a133dc232",
-    "models/v1/run.py": "04a0dc7ac378892c1f1d9618a44fdc9d5a118a18ee861b25c8f726c4fbef30c2",
+    "models/v1/multihorizon.py": "1a60401cc611247c6707a6818fbfef22814e8579698546494a40577cd2e1c7cc",
+    "models/v1/run.py": "0b18b839611a60bc69454de8738bc4cd596e345321a5c61a126fbf10e33969d1",
     "models/v1/topix500_universe.py": "fae278c01cd47e5ac89f72c3ad5462986a72b6931713c1beb4177edc3aacc99a",
     "models/v2/config.py": "57f19ad633cfd5dfca86b9bcbddc001b5707a73607a258fa6cd279c5eb0088ce",
     "models/v2/context_data.py": "49ef10f3f8180d963d4d571ca4d2c36236c47ce2b6b19ef5b072e4708370a59d",
@@ -35,7 +36,7 @@
     "models/v3/storage.py": "24281b3759be82e64f4f624dfb2ea056c3e0cda482b293fc94d507508aa9f13d",
     "requirements.txt": "a99babe53c3e751d9dcd466b6a3077cfc2dad80f3211eb54ec92f6cb7e92451c",
     "scripts/publish_results.py": "2d345357e5404e404e379674f7fc431c99fc20c9e4d45f0ad922183e3bc6546d",
-    "scripts/run_tests.py": "751a30ddb10ca31a4567e62f4dddbd8a01851f5e26a2dee0d50877681c219e92",
+    "scripts/run_tests.py": "dc3cf6ed63a0b613a83f6da0291d58adf92a9b4e8a4fc3c8a72186f30ad51616",
     "scripts/verify_release.py": "9e2c93ec79e03bb0636bc897423df1acef500f6b52a0204aa00d631b82e1fdea"
   }
 }

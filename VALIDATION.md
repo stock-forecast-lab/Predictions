@@ -1,3 +1,5 @@
+> 今回のV1拡張版の検証は [VALIDATION_V1_MULTIHORIZON.md](VALIDATION_V1_MULTIHORIZON.md) を参照してください。以下は前版の検証記録です。
+
 # 完全版20261024-v3-r1の検証記録
 
 実施日：2026-10-24 JST。Python 3.12。GitHub ActionsもPython 3.12です。
