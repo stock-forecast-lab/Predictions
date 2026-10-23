@@ -1,4 +1,3 @@
-
 name: Daily JP-US stock forecast
 
 on:
@@ -11,6 +10,8 @@ on:
         type: choice
         options: [BOTH, JP, US]
   schedule:
+    # GitHub cron is UTC. These times are deliberately after the cash close.
+    # JP: 16:30 JST. US: 18:30 ET (22:30 UTC during DST, 17:30 ET during standard time).
     - cron: '30 7 * * 1-5'
     - cron: '30 22 * * 1-5'
 
@@ -24,7 +25,7 @@ concurrency:
 jobs:
   forecast:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
         with:
@@ -50,6 +51,10 @@ jobs:
             echo "market=US" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Prepare official TOPIX 500 membership snapshot
+        if: steps.market.outputs.market == 'JP' || steps.market.outputs.market == 'BOTH'
+        run: python topix500_universe.py
+
       - name: Run Japan forecast
         if: steps.market.outputs.market == 'JP' || steps.market.outputs.market == 'BOTH'
         run: python main.py --market JP
@@ -63,7 +68,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add predictions output/evaluations data/raw || true
+          git add predictions output/evaluations data/universes || true
           if git diff --cached --quiet; then
             echo "No new files to commit."
             exit 0
