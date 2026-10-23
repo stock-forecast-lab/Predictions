@@ -1,0 +1,16 @@
+name: V1 daily forecast
+
+on:
+  workflow_dispatch:
+    inputs:
+      market:
+        description: Market
+        type: choice
+        options: [JP, US, BOTH]
+        default: JP
+
+jobs:
+  registration:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Select integration/v2-dashboard to run the forecast."
