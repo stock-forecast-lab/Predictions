@@ -12,6 +12,15 @@ on:
         type: choice
         options: [ALL, M1]
         default: ALL
+      profile:
+        description: Light is faster; standard retains previous model capacity
+        type: choice
+        options: [light, standard]
+        default: light
+      recovery_only:
+        description: Rebuild and save uploaded results without training
+        type: boolean
+        default: false
   schedule:
     - cron: '30 7 * * 1-5'
     - cron: '30 22 * * 1-5'
@@ -38,14 +47,18 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt
       - name: Dashboard and archive regression tests
+        if: ${{ !inputs.recovery_only }}
         run: python -m pytest -q tests --ignore=tests/v2
       - name: V2 regression tests
+        if: ${{ !inputs.recovery_only }}
         run: python -m pytest -q tests/v2 -c tests/v2/pytest.ini
       - name: Run V2 forecasts
+        if: ${{ !inputs.recovery_only }}
         env:
           EVENT: ${{ github.event_name }}
           SCHEDULE: ${{ github.event.schedule }}
           REQUESTED_MARKET: ${{ inputs.market }}
+          REQUESTED_PROFILE: ${{ inputs.profile }}
           REQUESTED_SETS: ${{ inputs.information_sets }}
         shell: bash
         run: |
@@ -54,14 +67,15 @@ jobs:
           if [[ "$EVENT" != 'workflow_dispatch' ]]; then
             if [[ "$SCHEDULE" == '30 7 * * 1-5' ]]; then market=JP; else market=US; fi
           fi
+          profile="${REQUESTED_PROFILE:-light}"
           sets=(M1 M2 M3)
           if [[ "$REQUESTED_SETS" == M1 ]]; then sets=(M1); fi
           status=0
           if [[ "$market" == JP || "$market" == BOTH ]]; then
-            python models/v2/main.py --market JP --sets "${sets[@]}" || status=1
+            python models/v2/main.py --market JP --sets "${sets[@]}" --profile "$profile" || status=1
           fi
           if [[ "$market" == US || "$market" == BOTH ]]; then
-            python models/v2/main.py --market US --sets "${sets[@]}" || status=1
+            python models/v2/main.py --market US --sets "${sets[@]}" --profile "$profile" || status=1
           fi
           exit "$status"
       - name: Append canonical records and refresh common dashboard
@@ -69,20 +83,6 @@ jobs:
         run: |
           python -m dashboard.normalize
           python -m dashboard.build --refresh-benchmarks
-      - name: Preserve complete forecast, evaluation and dashboard files
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          for dir in predictions evaluations/v1 evaluations/v2 output/evaluations data/universes data/benchmarks records docs dashboard/data.json; do
-            if [[ -e "$dir" ]]; then git add "$dir"; fi
-          done
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "forecast: V2 run $GITHUB_RUN_ID"
-          git pull --rebase origin "$GITHUB_REF_NAME"
-          git push origin "HEAD:$GITHUB_REF_NAME"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -92,6 +92,13 @@ jobs:
             evaluations/v1
             evaluations/v2
             records
+            data/universes
+            data/benchmarks
             docs/index.html
             dashboard/data.json
           if-no-files-found: ignore
+      - name: Preserve complete forecast, evaluation and dashboard files
+        if: always()
+        shell: bash
+        run: |
+          python scripts/publish_results.py --branch "$GITHUB_REF_NAME" --message "forecast: V2 run $GITHUB_RUN_ID"
