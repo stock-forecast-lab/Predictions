@@ -78,7 +78,7 @@ def rolling(points,metric,window):
 @st.fragment(run_every='60s')
 def dashboard():
     st.markdown('<div style="color:#178b83;letter-spacing:3px;font-size:11px">FORECAST OBSERVATORY / V1 → V5</div>',unsafe_allow_html=True)
-    st.title('予測を、実績で確かめる。')
+    st.title('株価予測確認グラフ')
     st.caption('日米株式 · モデル別予測 · 市場との比較 · 個別株の実績照合')
     demo=st.toggle('合成データで画面例を見る',value=False,key='demo')
     if demo: st.warning('すべて合成データです。実際のモデル成績・実際の指数ではありません。')
