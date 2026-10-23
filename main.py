@@ -1,5 +1,5 @@
 from pathlib import Path
-import argparse, json, os, uuid, warnings
+import argparse, hashlib, json, os, uuid, warnings
 from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
@@ -47,10 +47,12 @@ def us_tickers():
 
 
 def jp_tickers():
-    f = DATA/'jp_tickers.csv'
-    if not f.exists():
-        raise FileNotFoundError('Create data/jp_tickers.csv with column ticker, e.g. 7203.T')
-    return pd.read_csv(f)['ticker'].dropna().astype(str).tolist()
+    # Use the verified 500-name JPX official membership snapshot; the previous
+    # five-ticker sample data/jp_tickers.csv is intentionally NOT used.
+    from topix500_universe import get_tickers
+    tickers, snapshot = get_tickers()
+    print(f'Loaded {len(tickers)} official TOPIX 500 tickers from {snapshot}')
+    return tickers
 
 
 def download_prices(tickers, start=START):
@@ -131,10 +133,32 @@ def exclusive_csv(df, path):
     df.to_csv(path,index=False,mode='x')
 
 
+def already_forecast(market, observation_date):
+    """Detect an existing forecast without changing any prior forecast file."""
+    pred_dir=PRED/market
+    if not pred_dir.exists():
+        return False
+    for manifest in pred_dir.glob('*.json'):
+        try:
+            with open(manifest, encoding='utf-8') as fh:
+                obj=json.load(fh)
+            if (obj.get('model_version') == MODEL_VERSION
+                and obj.get('data_last_observation_date') == observation_date):
+                return True
+        except (OSError, ValueError, TypeError):
+            continue
+    return False
+
+
 def live_forecast(df, market):
     usable=df.dropna(subset=['target']).copy()
     last=pd.Timestamp(df['date'].max())
     today=df[df.date==last].copy()
+    if market == 'JP' and len(today) < 475:
+        raise RuntimeError(
+            f'TOPIX500 data coverage too low: {len(today)}/500 stocks '
+            f'on {last.date()}. No misleading incomplete forecast will be saved.'
+        )
     train=usable[usable.date<last]
     if train.date.nunique()<MIN_HISTORY:
         raise RuntimeError('Insufficient history')
@@ -153,6 +177,23 @@ def live_forecast(df, market):
     res.insert(1,'model_version',MODEL_VERSION)
     res.insert(2,'forecast_created_at_utc',created)
     res.insert(3,'forecast_for_session_date',target_date)
+    if market == 'JP':
+        from topix500_universe import snapshot_path
+        snapshot = snapshot_path(last.date())
+        universe_ref = str(snapshot.relative_to(ROOT))
+        snapshot_hash = hashlib.sha256(snapshot.read_bytes()).hexdigest()
+        res['universe_name'] = 'TOPIX500'
+        res['universe_snapshot'] = universe_ref
+        res['universe_snapshot_sha256'] = snapshot_hash
+        res['universe_expected_count'] = 500
+    else:
+        universe_ref = 'GitHub datasets S&P500 constituents (live)'
+        snapshot_hash = ''
+        res['universe_name'] = 'SP500'
+        res['universe_snapshot'] = universe_ref
+        res['universe_snapshot_sha256'] = snapshot_hash
+        res['universe_expected_count'] = len(res)
+
     res['data_last_observation_date']=pd.to_datetime(res['data_last_observation_date']).dt.date.astype(str)
     res=res.sort_values('Ensemble',ascending=False)
     folder=PRED/market
@@ -162,7 +203,12 @@ def live_forecast(df, market):
         'market':market,'model_version':MODEL_VERSION,'forecast_created_at_utc':created,
         'data_last_observation_date':last.date().isoformat(),'forecast_for_session_date':target_date,
         'forecast_file':str(path.relative_to(ROOT)),'rows':int(len(res)),
-        'github_run_id':os.getenv('GITHUB_RUN_ID'),'github_sha':os.getenv('GITHUB_SHA')
+        'github_run_id':os.getenv('GITHUB_RUN_ID'),'github_sha':os.getenv('GITHUB_SHA'),
+        'universe_name':'TOPIX500' if market=='JP' else 'SP500',
+        'universe_expected_count':500 if market=='JP' else int(len(res)),
+        'universe_observed_count':int(len(res)),
+        'universe_snapshot':universe_ref,
+        'universe_snapshot_sha256':snapshot_hash
     }
     mpath=path.with_suffix('.json')
     with open(mpath,'x',encoding='utf-8') as f:
@@ -206,7 +252,15 @@ def evaluate_previous_forecasts(px, market):
             if key in done:
                 continue
             cutoff=pd.Timestamp(r['data_last_observation_date'])
-            q=px[(px.ticker==r['ticker']) & (px.date>cutoff)]
+            target=r.get('forecast_for_session_date')
+            if isinstance(target, str) and target:
+                # Score ONLY the session that was actually forecast. Missing
+                # quote/suspended tickers remain pending rather than comparing
+                # against a different trading session.
+                q=px[(px.ticker==r['ticker']) & (px.date==pd.Timestamp(target))]
+            else:
+                # Compatibility with legacy forecasts without target date.
+                q=px[(px.ticker==r['ticker']) & (px.date>cutoff)]
             if q.empty:
                 continue
             realized=q.iloc[0]
@@ -257,11 +311,22 @@ def pseudo_oos(df, market, start_test='2024-01-01', rebalance='W-FRI'):
 def run(market, backtest=False):
     tics=us_tickers() if market=='US' else jp_tickers()
     px=download_prices(tics)
-    px.to_parquet(RAW/f'{market}_prices.parquet',index=False)
+    if os.getenv('GITHUB_ACTIONS') != 'true':
+        px.to_parquet(RAW/f'{market}_prices.parquet',index=False)
     ev,evpath=evaluate_previous_forecasts(px,market)
     if evpath is not None:
         print(f'Previous forecasts evaluated: {evpath} ({len(ev)} ticker forecasts)')
-    df=features(px); df.to_parquet(RAW/f'{market}_features.parquet',index=False)
+    # Make a genuine new forecast only when the data cutoff or model version
+    # changes. This prevents duplicate 'live' forecasts on non-trading days
+    # and on repeated manual workflow runs.
+    last_data_day = pd.Timestamp(px['date'].max()).date().isoformat()
+    if already_forecast(market, last_data_day):
+        print(f'Already forecast with model {MODEL_VERSION} and observation '
+              f'date {last_data_day}; no duplicate forecast generated.')
+        return
+    df=features(px)
+    if os.getenv('GITHUB_ACTIONS') != 'true':
+        df.to_parquet(RAW/f'{market}_features.parquet',index=False)
     res,path=live_forecast(df,market)
     print(f'Forecast saved immutably: {path}')
     print(res[['ticker','Ensemble']].head(TOP_N).to_string(index=False))

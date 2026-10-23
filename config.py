@@ -13,8 +13,8 @@ START = '2015-01-01'
 MIN_HISTORY = 252
 TOP_N = 10
 RANDOM_STATE = 42
-MODEL_VERSION = 'v1.1-actions'
+MODEL_VERSION = 'v1.3-topix500'
 
-# V1: public-data prototype. US universe is downloaded automatically.
-# Japan: place a CSV at data/jp_tickers.csv with a column named ticker.
-# Yahoo Japan tickers should look like 7203.T, 6758.T, etc.
+# Japan: verified official JPX TOPIX 500 component snapshot, fetched via
+# topix500_universe.py and stored under data/universes/JP/.
+# The original five-name CSV is no longer used for production forecasts.
