@@ -19,7 +19,11 @@ BENCH_NAMES={'UNIVERSE_EW':'同じ銘柄の等ウェイト実績','NIKKEI225':'�
 
 def valid(x): return isinstance(x,(int,float)) and math.isfinite(x)
 def fmt(x,pct=True): return f'{100*x:.2f}%' if valid(x) and pct else f'{x:.3f}' if valid(x) else '—'
-def label(s): return f"{s['version']} · {s['information_set']} · {s['model']} [{s['spec'][:6]}]"
+def version_name(v):
+    return 'V1' if v == 'v1.4-topix500-membership' else v
+
+def label(s):
+    return f"{version_name(s['version'])} · {s['information_set']} · {s['model']} [{s['spec'][:6]}]"
 
 
 @st.cache_data(ttl=60,show_spinner=False)
@@ -97,7 +101,14 @@ def dashboard():
     horizons=sorted(set(s['horizon'] for s in available))
     horizon=cols[1].selectbox('予測期間',horizons or [1],format_func=lambda x:f'{x}営業日先')
     specs=sorted(set(s['version']+'|'+s['spec'] for s in available))
-    spec=cols[2].selectbox('バージョン / 設定',['ALL']+specs,format_func=lambda x:'すべて' if x=='ALL' else x.replace('|',' / '))
+        spec=cols[2].selectbox(
+        'バージョン / 設定',
+        ['ALL']+specs,
+        format_func=lambda x: 'すべて' if x=='ALL' else (
+            'V1' if x.split('|')[0]=='v1.4-topix500-membership'
+            else x.replace('|',' / ')
+        )
+    )
     info_options=['ALL']+sorted(set(s['information_set'] for s in available if spec=='ALL' or s['version']+'|'+s['spec']==spec))
     info_names={'ALL':'すべて','M1':'M1 / 市場','M2':'M2 / 為替・金利','M3':'M3 / マクロ'}
     info=cols[3].selectbox('情報集合',info_options,index=0,format_func=lambda x:info_names.get(x,x.replace('_CONTROL',' / 企業情報なし').replace('_FINANCIAL',' / 企業情報あり')))
