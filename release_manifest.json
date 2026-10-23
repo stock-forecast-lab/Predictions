@@ -3,7 +3,6 @@
   "sha256": {
     "RELEASE.txt": "dde86adc21b05d2a2e727f3a0076118b4b4070f8316aa33d2328fe4fa2d06960",
     "dashboard/__init__.py": "8b7da41b3d2bc387ad8a2a18fd768d1c7f58fb7ee96b9b8d5a40e4141db06326",
-    "dashboard/app.py": "1843d62045d1bc6eb14012239314d6afe26209e3cec6aa14f6c42722cb694bd5",
     "dashboard/build.py": "60c5223c79dbb8d0361505719149a427c3d81959d39b2c8eeee0b6956d579f74",
     "dashboard/data.py": "cead9dd9265069be0619a1c1ef3936174359386da1893abc239c03f29674f391",
     "dashboard/exchange_calendar.py": "028bf1a12c2f71c45171cbacddc3f3ae09fa3d09c2e2f4e3679ee8352d682fb9",
