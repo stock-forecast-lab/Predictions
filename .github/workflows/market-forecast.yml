@@ -1,11 +1,78 @@
-# Replaces the former scheduled workflow so installing this bundle does not run V2 twice.
-name: Legacy workflow replaced — use V1 or V2 forecast
+name: Daily JP-US stock forecast
+
 on:
   workflow_dispatch:
+    inputs:
+      market:
+        description: Market to run
+        required: true
+        default: BOTH
+        type: choice
+        options: [BOTH, JP, US]
+  schedule:
+    # GitHub cron is UTC. These times are deliberately after the cash close.
+    # JP: 16:30 JST. US: 18:30 ET (22:30 UTC during DST, 17:30 ET during standard time).
+    - cron: '30 7 * * 1-5'
+    - cron: '30 22 * * 1-5'
+
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: stock-forecast-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  notice:
+  forecast:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     steps:
-      - run: echo 'Use V1 daily forecast or V2 daily forecast. This legacy entry has no schedule.'
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Decide market for this run
+        id: market
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "market=${{ inputs.market }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event.schedule }}" == "30 7 * * 1-5" ]]; then
+            echo "market=JP" >> "$GITHUB_OUTPUT"
+          else
+            echo "market=US" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Prepare official TOPIX 500 membership snapshot
+        if: steps.market.outputs.market == 'JP' || steps.market.outputs.market == 'BOTH'
+        run: python topix500_universe.py
+
+      - name: Run Japan forecast
+        if: steps.market.outputs.market == 'JP' || steps.market.outputs.market == 'BOTH'
+        run: python main.py --market JP
+
+      - name: Run US forecast
+        if: steps.market.outputs.market == 'US' || steps.market.outputs.market == 'BOTH'
+        run: python main.py --market US
+
+      - name: Commit immutable forecast and evaluation logs
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add predictions output/evaluations data/universes || true
+          if git diff --cached --quiet; then
+            echo "No new files to commit."
+            exit 0
+          fi
+          git commit -m "forecast: automated ${{ steps.market.outputs.market }} run $GITHUB_RUN_ID"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
