@@ -60,20 +60,6 @@ jobs:
         run: |
           python -m dashboard.normalize
           python -m dashboard.build --refresh-benchmarks
-      - name: Preserve complete forecast, evaluation and dashboard files
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          for dir in predictions evaluations/v1 evaluations/v2 output/evaluations data/universes data/benchmarks records docs dashboard/data.json; do
-            if [[ -e "$dir" ]]; then git add "$dir"; fi
-          done
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "forecast: V1 run $GITHUB_RUN_ID"
-          git pull --rebase origin "$GITHUB_REF_NAME"
-          git push origin "HEAD:$GITHUB_REF_NAME"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -83,6 +69,13 @@ jobs:
             evaluations/v1
             evaluations/v2
             records
+            data/universes
+            data/benchmarks
             docs/index.html
             dashboard/data.json
           if-no-files-found: ignore
+      - name: Preserve complete forecast, evaluation and dashboard files
+        if: always()
+        shell: bash
+        run: |
+          python scripts/publish_results.py --branch "$GITHUB_REF_NAME" --message "forecast: V1 run $GITHUB_RUN_ID"
