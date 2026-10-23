@@ -1,0 +1,11 @@
+# Replaces the former scheduled workflow so installing this bundle does not run V2 twice.
+name: Legacy workflow replaced — use V1 or V2 forecast
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  notice:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo 'Use V1 daily forecast or V2 daily forecast. This legacy entry has no schedule.'
