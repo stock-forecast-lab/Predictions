@@ -1,0 +1,15 @@
+# Machine-specific caches / generated working data (not immutable forecast logs)
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+data/raw/
+# Immutable predictions/ and output/evaluations/ are intentionally tracked.
+
+# V2 temporary input cache; forecasts and evaluation logs must stay tracked.
+data/context_cache/
+__pycache__/
+.pytest_cache/
+*.pyc
+
+data/fundamentals/**/*.tmp

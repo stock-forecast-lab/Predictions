@@ -1,0 +1,169 @@
+{
+  "market": "US",
+  "data_last_observation_date": "2026-10-22",
+  "forecast_cutoff_at_utc": "2026-10-22 20:00:00+00:00",
+  "settings": {
+    "sets": [
+      "M1",
+      "M2",
+      "M3"
+    ],
+    "horizons": [
+      1,
+      5,
+      20
+    ],
+    "models": null,
+    "train_sessions": 756,
+    "profile": "standard",
+    "estimator_parameters": {
+      "rf_trees": 250,
+      "rf_depth": null,
+      "xgb_trees": 300,
+      "xgb_depth": 4,
+      "xgb_tree_method": "auto"
+    }
+  },
+  "settings_sha256": "2d741646ddef7fb56172850b1e46814cc20fe5fb6700d6f119163782201b377c",
+  "features": {
+    "M1": [
+      "ret1",
+      "ret5",
+      "ret20",
+      "ret60",
+      "vol20",
+      "vol60",
+      "vol_z20",
+      "hl20",
+      "ma20_gap",
+      "ma60_gap",
+      "mkt_ret1",
+      "rel_ret20"
+    ],
+    "M2": [
+      "ret1",
+      "ret5",
+      "ret20",
+      "ret60",
+      "vol20",
+      "vol60",
+      "vol_z20",
+      "hl20",
+      "ma20_gap",
+      "ma60_gap",
+      "mkt_ret1",
+      "rel_ret20",
+      "fx_ret1",
+      "fx_ret20",
+      "us2y",
+      "us2y_change20",
+      "us10y",
+      "us10y_change20",
+      "credit",
+      "credit_change20",
+      "vix",
+      "vix_change20",
+      "term_spread"
+    ],
+    "M3": [
+      "ret1",
+      "ret5",
+      "ret20",
+      "ret60",
+      "vol20",
+      "vol60",
+      "vol_z20",
+      "hl20",
+      "ma20_gap",
+      "ma60_gap",
+      "mkt_ret1",
+      "rel_ret20",
+      "fx_ret1",
+      "fx_ret20",
+      "us2y",
+      "us2y_change20",
+      "us10y",
+      "us10y_change20",
+      "credit",
+      "credit_change20",
+      "vix",
+      "vix_change20",
+      "term_spread",
+      "us_cpi_yoy",
+      "us_ip_yoy",
+      "us_unemployment",
+      "us_short_rate"
+    ]
+  },
+  "universe": {
+    "name": "SP500",
+    "snapshot": "data/universes/US/2026-10-22_f83c1e5c4774.csv",
+    "sha256": "f83c1e5c47746693daa231cdd8dce2d73f41a19b163707a3cd7acf95a10f8f97",
+    "count": 503
+  },
+  "context_sources": {
+    "DEXJPUS": {
+      "sha256": "39d113a9b155ca1da296fe1f9ba310fca654f53ce40526bf1a74dc71958f1798",
+      "last_available_at": "2026-10-21 00:00:00+00:00",
+      "last_observation_date": "2026-10-16 00:00:00",
+      "n_vintage_records": 7509
+    },
+    "DGS2": {
+      "sha256": "1892100dd97b9441405b305b995fe66f815696ae2e26d64d09594c61f3d0d141",
+      "last_available_at": "2026-10-22 00:00:00+00:00",
+      "last_observation_date": "2026-10-19 00:00:00",
+      "n_vintage_records": 7515
+    },
+    "DGS10": {
+      "sha256": "a5f4f5f2b5b74a441245576f19f75b7bb5146cb5660b233354e05eb430b62c59",
+      "last_available_at": "2026-10-22 00:00:00+00:00",
+      "last_observation_date": "2026-10-19 00:00:00",
+      "n_vintage_records": 7517
+    },
+    "BAA10Y": {
+      "sha256": "7a860aab2b9fe18bf9439877885925c4ceacb484338f0f9bddf0d95b702dcd46",
+      "last_available_at": "2026-10-22 00:00:00+00:00",
+      "last_observation_date": "2026-10-19 00:00:00",
+      "n_vintage_records": 7527
+    },
+    "VIXCLS": {
+      "sha256": "43283dc7ccea23f318b195189971f5cdbb481b9e947fc929840caea657e11879",
+      "last_available_at": "2026-10-22 00:00:00+00:00",
+      "last_observation_date": "2026-10-20 00:00:00",
+      "n_vintage_records": 7522
+    },
+    "CPIAUCSL": {
+      "sha256": "abc00334b33f7fc5cfb2a35b3c814aa49d9d8734153a615c5f0cbb130636c162",
+      "last_available_at": "2026-10-16 00:00:00+00:00",
+      "last_observation_date": "2026-09-01 00:00:00",
+      "n_vintage_records": 1005
+    },
+    "INDPRO": {
+      "sha256": "8543306b817b56d687469b970ae4c2122f0c6e6c1ca68bfa3fa104a6fac36fa6",
+      "last_available_at": "2026-10-18 00:00:00+00:00",
+      "last_observation_date": "2026-09-01 00:00:00",
+      "n_vintage_records": 2037
+    },
+    "UNRATE": {
+      "sha256": "9a52d054932c5448463960b02662962a26456746a5f958f3ef37e03a30990803",
+      "last_available_at": "2026-10-04 00:00:00+00:00",
+      "last_observation_date": "2026-09-01 00:00:00",
+      "n_vintage_records": 463
+    },
+    "FEDFUNDS": {
+      "sha256": "ab7e0d066d3aa5e25cee03cdea13a1816d12be234ba36945aa5a2139abc98e0b",
+      "last_available_at": "2026-10-03 00:00:00+00:00",
+      "last_observation_date": "2026-09-01 00:00:00",
+      "n_vintage_records": 343
+    }
+  },
+  "vintage_delay_days": 2,
+  "rows": 36144,
+  "survivorship_bias_in_historical_training": true,
+  "csv_file": "2026-10-22_v2.0.0_20261023T135527_3825ea0c.csv",
+  "csv_sha256": "e893d89d7f0466b9d848fbb6505feed3d726b48c22e1067715398a3c2bf6b78f",
+  "created_at_utc": "2026-10-23T13:55:27.356466+00:00",
+  "model_version": "v2.0.0",
+  "github_sha": "f6fa170a2a57665899c8c3213ef5cb87c14ad6cf",
+  "github_run_id": "39962752329"
+}

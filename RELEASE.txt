@@ -1,0 +1,4 @@
+stock-forecast complete 20261024-v3-r1
+V1 + V2 + V3 + shared dashboard + workflows
+V3: JP EDINET / US SEC, matched CONTROL and FINANCIAL.
+Includes existing V2 FRED, profile and safe-publishing fixes. V4/V5 are placeholders.

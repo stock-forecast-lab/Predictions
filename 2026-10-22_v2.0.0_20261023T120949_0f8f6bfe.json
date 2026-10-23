@@ -1,0 +1,78 @@
+{
+  "market": "US",
+  "data_last_observation_date": "2026-10-22",
+  "forecast_cutoff_at_utc": "2026-10-22 20:00:00+00:00",
+  "settings": {
+    "sets": [
+      "M1"
+    ],
+    "horizons": [
+      1,
+      5,
+      20
+    ],
+    "models": null,
+    "train_sessions": 756
+  },
+  "settings_sha256": "096ae33e7b3a641be159d318b7bd75a71a05b0725ceb039b34ab14e9a5e4cbe5",
+  "features": {
+    "M1": [
+      "ret1",
+      "ret5",
+      "ret20",
+      "ret60",
+      "vol20",
+      "vol60",
+      "vol_z20",
+      "hl20",
+      "ma20_gap",
+      "ma60_gap",
+      "mkt_ret1",
+      "rel_ret20"
+    ],
+    "M2": [
+      "ret1",
+      "ret5",
+      "ret20",
+      "ret60",
+      "vol20",
+      "vol60",
+      "vol_z20",
+      "hl20",
+      "ma20_gap",
+      "ma60_gap",
+      "mkt_ret1",
+      "rel_ret20"
+    ],
+    "M3": [
+      "ret1",
+      "ret5",
+      "ret20",
+      "ret60",
+      "vol20",
+      "vol60",
+      "vol_z20",
+      "hl20",
+      "ma20_gap",
+      "ma60_gap",
+      "mkt_ret1",
+      "rel_ret20"
+    ]
+  },
+  "universe": {
+    "name": "SP500",
+    "snapshot": "data/universes/US/2026-10-22_f83c1e5c4774.csv",
+    "sha256": "f83c1e5c47746693daa231cdd8dce2d73f41a19b163707a3cd7acf95a10f8f97",
+    "count": 503
+  },
+  "context_sources": {},
+  "vintage_delay_days": 2,
+  "rows": 12048,
+  "survivorship_bias_in_historical_training": true,
+  "csv_file": "2026-10-22_v2.0.0_20261023T120949_0f8f6bfe.csv",
+  "csv_sha256": "35d157fe2f26ece36e47055fb424df039975758d15ec110fd8477e6c36efd2b5",
+  "created_at_utc": "2026-10-23T12:09:49.427857+00:00",
+  "model_version": "v2.0.0",
+  "github_sha": "3baa7c6488341b27506327b1c11d418ccb7ccbc4",
+  "github_run_id": "39948778206"
+}

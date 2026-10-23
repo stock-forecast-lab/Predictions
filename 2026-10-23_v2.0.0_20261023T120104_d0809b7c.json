@@ -1,0 +1,78 @@
+{
+  "market": "JP",
+  "data_last_observation_date": "2026-10-23",
+  "forecast_cutoff_at_utc": "2026-10-23 06:30:00+00:00",
+  "settings": {
+    "sets": [
+      "M1"
+    ],
+    "horizons": [
+      1,
+      5,
+      20
+    ],
+    "models": null,
+    "train_sessions": 756
+  },
+  "settings_sha256": "096ae33e7b3a641be159d318b7bd75a71a05b0725ceb039b34ab14e9a5e4cbe5",
+  "features": {
+    "M1": [
+      "ret1",
+      "ret5",
+      "ret20",
+      "ret60",
+      "vol20",
+      "vol60",
+      "vol_z20",
+      "hl20",
+      "ma20_gap",
+      "ma60_gap",
+      "mkt_ret1",
+      "rel_ret20"
+    ],
+    "M2": [
+      "ret1",
+      "ret5",
+      "ret20",
+      "ret60",
+      "vol20",
+      "vol60",
+      "vol_z20",
+      "hl20",
+      "ma20_gap",
+      "ma60_gap",
+      "mkt_ret1",
+      "rel_ret20"
+    ],
+    "M3": [
+      "ret1",
+      "ret5",
+      "ret20",
+      "ret60",
+      "vol20",
+      "vol60",
+      "vol_z20",
+      "hl20",
+      "ma20_gap",
+      "ma60_gap",
+      "mkt_ret1",
+      "rel_ret20"
+    ]
+  },
+  "universe": {
+    "name": "TOPIX500",
+    "snapshot": "data/universes/JP/2026-10-23_42d696466f93.csv",
+    "sha256": "42d696466f93552e178bf92a88c380f8abe01f0fbd80f91c7f29ea9dbd6c5e93",
+    "count": 493
+  },
+  "context_sources": {},
+  "vintage_delay_days": 2,
+  "rows": 11760,
+  "survivorship_bias_in_historical_training": true,
+  "csv_file": "2026-10-23_v2.0.0_20261023T120104_d0809b7c.csv",
+  "csv_sha256": "6d83e46a8f7d2275a1232ba9d800fa14525812affc52a51bbd4d004a0c2646e9",
+  "created_at_utc": "2026-10-23T12:01:04.928876+00:00",
+  "model_version": "v2.0.0",
+  "github_sha": "3baa7c6488341b27506327b1c11d418ccb7ccbc4",
+  "github_run_id": "39948778206"
+}

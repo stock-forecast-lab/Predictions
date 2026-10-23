@@ -1,21 +1,109 @@
 name: V2 daily forecast
-
 on:
   workflow_dispatch:
     inputs:
       market:
         description: Market
         type: choice
-        options: [JP, US, BOTH]
-        default: JP
+        options: [BOTH, JP, US]
+        default: BOTH
       information_sets:
-        description: Information sets
+        description: M2/M3 require FRED_API_KEY
         type: choice
-        options: [M1, ALL]
-        default: M1
-
+        options: [ALL, M1]
+        default: ALL
+      profile:
+        description: Light is faster; standard retains previous model capacity
+        type: choice
+        options: [light, standard]
+        default: light
+      recovery_only:
+        description: Rebuild and save uploaded results without training
+        type: boolean
+        default: false
+  schedule:
+    - cron: '30 7 * * 1-5'
+    - cron: '30 22 * * 1-5'
+permissions:
+  contents: write
+concurrency:
+  group: stock-forecast-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
-  registration:
+  forecast:
     runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      PYTHONUNBUFFERED: '1'
     steps:
-      - run: echo "Select integration/v2-dashboard to run the forecast."
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Verify integrated release
+        run: |
+          cat RELEASE.txt
+          python scripts/verify_release.py
+          sha256sum models/v2/context_data.py
+      - run: pip install -r requirements.txt
+      - name: Dashboard and archive regression tests
+        if: ${{ !inputs.recovery_only }}
+        run: python -m pytest -q tests --ignore=tests/v2 --ignore=tests/v3
+      - name: V2 regression tests
+        if: ${{ !inputs.recovery_only }}
+        run: python -m pytest -q tests/v2 -c tests/v2/pytest.ini
+      - name: Run V2 forecasts
+        if: ${{ !inputs.recovery_only }}
+        env:
+          EVENT: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+          REQUESTED_MARKET: ${{ inputs.market }}
+          REQUESTED_PROFILE: ${{ inputs.profile }}
+          REQUESTED_SETS: ${{ inputs.information_sets }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          market="$REQUESTED_MARKET"
+          if [[ "$EVENT" != 'workflow_dispatch' ]]; then
+            if [[ "$SCHEDULE" == '30 7 * * 1-5' ]]; then market=JP; else market=US; fi
+          fi
+          profile="${REQUESTED_PROFILE:-standard}"
+          sets=(M1 M2 M3)
+          if [[ "$REQUESTED_SETS" == M1 ]]; then sets=(M1); fi
+          status=0
+          if [[ "$market" == JP || "$market" == BOTH ]]; then
+            python models/v2/main.py --market JP --sets "${sets[@]}" --profile "$profile" || status=1
+          fi
+          if [[ "$market" == US || "$market" == BOTH ]]; then
+            python models/v2/main.py --market US --sets "${sets[@]}" --profile "$profile" || status=1
+          fi
+          exit "$status"
+      - name: Append canonical records and refresh common dashboard
+        if: always()
+        run: |
+          python -m dashboard.normalize
+          python -m dashboard.build --refresh-benchmarks
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: V2-${{ github.run_id }}
+          path: |
+            predictions
+            evaluations/v1
+            evaluations/v2
+            records
+            data/universes
+            data/benchmarks
+            docs/index.html
+            dashboard/data.json
+          if-no-files-found: ignore
+      - name: Preserve complete forecast, evaluation and dashboard files
+        if: always()
+        shell: bash
+        run: |
+          python scripts/publish_results.py --branch "$GITHUB_REF_NAME" --message "forecast: V2 run $GITHUB_RUN_ID"

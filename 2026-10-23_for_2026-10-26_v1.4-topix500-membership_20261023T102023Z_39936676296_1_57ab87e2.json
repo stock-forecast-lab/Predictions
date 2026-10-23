@@ -1,0 +1,16 @@
+{
+  "market": "JP",
+  "model_version": "v1.4-topix500-membership",
+  "forecast_created_at_utc": "2026-10-23T10:20:23+00:00",
+  "data_last_observation_date": "2026-10-23",
+  "forecast_for_session_date": "2026-10-26",
+  "forecast_file": "predictions/JP/2026-10-23_for_2026-10-26_v1.4-topix500-membership_20261023T102023Z_39936676296_1_57ab87e2.csv",
+  "rows": 493,
+  "github_run_id": "39936676296",
+  "github_sha": "6844531dc82820003e3513ecceb5fad76142a73b",
+  "universe_name": "TOPIX500",
+  "universe_expected_count": 493,
+  "universe_observed_count": 493,
+  "universe_snapshot": "data/universes/JP/topix500_pre_20261030.csv",
+  "universe_snapshot_sha256": "42d696466f93552e178bf92a88c380f8abe01f0fbd80f91c7f29ea9dbd6c5e93"
+}
