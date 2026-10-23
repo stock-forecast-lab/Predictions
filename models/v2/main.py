@@ -93,6 +93,13 @@ def run(args):
                            'Without a key only --sets M1 is available.')
     complete, calendar = completed_schedule(args.market,START)
     cutoff = complete.index[-1]
+    cache = root/'data/context_cache'
+    started = perf_counter()
+    print('Preparing context data',flush=True)
+    ctx,m2,m3,evidence = context_features(complete.market_close,args.market,args.sets,
+        (pd.Timestamp(START)-pd.DateOffset(years=2)).date().isoformat(),
+        pd.Timestamp.now(tz='UTC').date().isoformat(),cache)
+    print(f'Context data: {perf_counter()-started:.1f}s',flush=True)
     tickers, membership = universe(args.market,root,cutoff.date().isoformat())
     # Delisted/unavailable quotes remain pending, but an ordinary index removal
     # must not prevent an already-created forecast from reaching evaluation.
@@ -105,13 +112,6 @@ def run(args):
     observed = set(px.loc[px.date==cutoff,'ticker']) & set(tickers)
     if len(observed)<np.ceil(.95*len(tickers)):
         raise RuntimeError(f'Latest completed session {cutoff.date()}: coverage {len(observed)}/{len(tickers)} below 95%')
-    cache = root/'data/context_cache'
-    started = perf_counter()
-    print('Preparing context data',flush=True)
-    ctx,m2,m3,evidence = context_features(complete.market_close,args.market,args.sets,
-        (pd.Timestamp(START)-pd.DateOffset(years=2)).date().isoformat(),
-        pd.Timestamp.now(tz='UTC').date().isoformat(),cache)
-    print(f'Context data: {perf_counter()-started:.1f}s',flush=True)
     started = perf_counter()
     panel = make_panel(px[px.ticker.isin(tickers)],complete.index,args.horizons).merge(ctx,on='date',how='left',validate='many_to_one')
     print(f'Feature preparation: {perf_counter()-started:.1f}s',flush=True)

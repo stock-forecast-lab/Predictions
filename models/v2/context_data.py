@@ -2,6 +2,8 @@
 import hashlib
 import json
 import os
+import re
+from datetime import date, timedelta
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -16,27 +18,49 @@ def fetch_vintages(series, start, end, cache):
     key = os.getenv('FRED_API_KEY')
     if not key:
         raise RuntimeError('M2/M3 require FRED_API_KEY. Add it to GitHub Actions Secrets or use --sets M1.')
-    rows, offset = [], 0
-    while True:
-        try:
-            r = requests.get('https://api.stlouisfed.org/fred/series/observations',
-                params={'series_id':series, 'api_key':key, 'file_type':'json',
-                        'observation_start':start, 'observation_end':end,
-                        'realtime_start':'1776-07-04', 'realtime_end':end,
-                        'output_type':1, 'limit':100000, 'offset':offset}, timeout=90)
-        except requests.RequestException:
-            raise RuntimeError(f'FRED network failure: {series}; check access and retry') from None
-        # raise_for_status would embed a URL containing the API key.
-        if r.status_code != 200:
-            raise RuntimeError(f'FRED request failed: {series}, HTTP {r.status_code}')
-        body = r.json()
-        page = body.get('observations', [])
-        rows.extend(page)
-        offset += len(page)
-        if offset >= int(body.get('count', 0)):
-            break
-        if not page:
-            raise RuntimeError(f'FRED pagination stopped unexpectedly: {series}')
+    # JSON requests permit at most 2,000 vintage dates. Bound each realtime
+    # interval to five years (<1,827 calendar dates), independently of record
+    # pagination. No observation dated before observation_start is requested,
+    # so it cannot have been released before that date. Adjacent windows may
+    # include repeated snapshots; replaying them preserves the known state.
+    rows = []
+    first, last = date.fromisoformat(start), date.fromisoformat(end)
+    if first > last:
+        raise ValueError('FRED observation start must not exceed end')
+    while first <= last:
+        final = min(date(first.year + 5, 1, 1) - timedelta(days=1), last)
+        offset = 0
+        print(f'FRED {series}: vintages {first} to {final}', flush=True)
+        while True:
+            try:
+                r = requests.get('https://api.stlouisfed.org/fred/series/observations',
+                    params={'series_id':series, 'api_key':key, 'file_type':'json',
+                            'observation_start':start, 'observation_end':end,
+                            'realtime_start':first.isoformat(), 'realtime_end':final.isoformat(),
+                            'output_type':1, 'limit':100000, 'offset':offset}, timeout=90)
+            except requests.RequestException:
+                raise RuntimeError(f'FRED network failure: {series}; check access and retry') from None
+            # Never use raise_for_status: its URL includes the API key.
+            if r.status_code != 200:
+                try:
+                    detail = str(r.json().get('error_message', ''))
+                except (ValueError, AttributeError):
+                    detail = ''
+                detail = detail.replace(key, '[REDACTED]')
+                detail = re.sub(r'https?://\S+', '[URL REDACTED]', detail)
+                detail = re.sub(r'[a-zA-Z0-9]{32}', '[REDACTED]', detail)
+                detail = ' '.join(detail.split())[:500]
+                raise RuntimeError(f'FRED request failed: {series}, HTTP {r.status_code}' +
+                                   (f'; {detail}' if detail else ''))
+            body = r.json()
+            page = body.get('observations', [])
+            rows.extend(page)
+            offset += len(page)
+            if offset >= int(body.get('count', 0)):
+                break
+            if not page:
+                raise RuntimeError(f'FRED pagination stopped unexpectedly: {series}')
+        first = final + timedelta(days=1)
     if not rows:
         raise RuntimeError(f'No vintage observations: {series}')
     path.parent.mkdir(parents=True, exist_ok=True)
