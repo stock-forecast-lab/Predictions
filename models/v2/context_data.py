@@ -50,6 +50,14 @@ def fetch_vintages(series, start, end, cache):
                 detail = re.sub(r'https?://\S+', '[URL REDACTED]', detail)
                 detail = re.sub(r'[a-zA-Z0-9]{32}', '[REDACTED]', detail)
                 detail = ' '.join(detail.split())[:500]
+                # An early realtime window can precede the series' first
+                # archived vintage. Only this exact provider response is empty
+                # history; key, rate-limit and all other failures remain fatal.
+                absent = 'series does not exist in alfred' in detail.lower()
+                if r.status_code == 400 and absent and final < last and offset == 0:
+                    print(f'FRED {series}: no archived vintage in {first} to {final}; '
+                          'continuing to next interval', flush=True)
+                    break
                 raise RuntimeError(f'FRED request failed: {series}, HTTP {r.status_code}' +
                                    (f'; {detail}' if detail else ''))
             body = r.json()
