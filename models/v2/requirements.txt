@@ -1,0 +1,11 @@
+pandas>=2.2,<3
+numpy>=1.26,<3
+scikit-learn>=1.5,<2
+xgboost>=2.1,<4
+yfinance>=0.2.66,<1
+pandas_market_calendars>=4.4,<6
+requests>=2.32,<3
+pdfplumber>=0.11,<1
+pyarrow>=17,<24
+scipy>=1.13,<2
+pytest>=8,<10
