@@ -27,7 +27,7 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: stock-forecast-${{ github.ref }}
+  group: stock-forecast-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   forecast:
@@ -45,10 +45,15 @@ jobs:
         with:
           python-version: '3.12'
           cache: pip
+      - name: Verify integrated release
+        run: |
+          cat RELEASE.txt
+          python scripts/verify_release.py
+          sha256sum models/v2/context_data.py
       - run: pip install -r requirements.txt
       - name: Dashboard and archive regression tests
         if: ${{ !inputs.recovery_only }}
-        run: python -m pytest -q tests --ignore=tests/v2
+        run: python -m pytest -q tests --ignore=tests/v2 --ignore=tests/v3
       - name: V2 regression tests
         if: ${{ !inputs.recovery_only }}
         run: python -m pytest -q tests/v2 -c tests/v2/pytest.ini
