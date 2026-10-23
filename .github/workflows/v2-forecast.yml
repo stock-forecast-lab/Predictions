@@ -72,7 +72,7 @@ jobs:
           if [[ "$EVENT" != 'workflow_dispatch' ]]; then
             if [[ "$SCHEDULE" == '30 7 * * 1-5' ]]; then market=JP; else market=US; fi
           fi
-          profile="${REQUESTED_PROFILE:-light}"
+          profile="${REQUESTED_PROFILE:-standard}"
           sets=(M1 M2 M3)
           if [[ "$REQUESTED_SETS" == M1 ]]; then sets=(M1); fi
           status=0
