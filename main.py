@@ -47,7 +47,7 @@ def us_tickers():
 
 
 def jp_tickers():
-    # Use the verified 500-name JPX official membership snapshot; the previous
+    # Use the validated official JPX membership snapshot; the previous
     # five-ticker sample data/jp_tickers.csv is intentionally NOT used.
     from topix500_universe import get_tickers
     tickers, snapshot = get_tickers()
@@ -154,11 +154,19 @@ def live_forecast(df, market):
     usable=df.dropna(subset=['target']).copy()
     last=pd.Timestamp(df['date'].max())
     today=df[df.date==last].copy()
-    if market == 'JP' and len(today) < 475:
-        raise RuntimeError(
-            f'TOPIX500 data coverage too low: {len(today)}/500 stocks '
-            f'on {last.date()}. No misleading incomplete forecast will be saved.'
-        )
+    if market == 'JP':
+        from topix500_universe import snapshot_path, validate_snapshot
+        official = validate_snapshot(snapshot_path(last.date()))
+        eligible = set(official['ticker'])
+        observed = set(today['ticker']) & eligible
+        expected = len(eligible)
+        minimum = int(np.ceil(expected * 0.95))
+        if len(observed) < minimum:
+            raise RuntimeError(
+                f'TOPIX 500 data coverage too low: {len(observed)}/{expected} '
+                f'official constituents on {last.date()} (minimum {minimum}). '
+                'No incomplete forecast will be saved.'
+            )
     train=usable[usable.date<last]
     if train.date.nunique()<MIN_HISTORY:
         raise RuntimeError('Insufficient history')
@@ -181,11 +189,12 @@ def live_forecast(df, market):
         from topix500_universe import snapshot_path
         snapshot = snapshot_path(last.date())
         universe_ref = str(snapshot.relative_to(ROOT))
+        official_count = len(official)
         snapshot_hash = hashlib.sha256(snapshot.read_bytes()).hexdigest()
         res['universe_name'] = 'TOPIX500'
         res['universe_snapshot'] = universe_ref
         res['universe_snapshot_sha256'] = snapshot_hash
-        res['universe_expected_count'] = 500
+        res['universe_expected_count'] = official_count
     else:
         universe_ref = 'GitHub datasets S&P500 constituents (live)'
         snapshot_hash = ''
@@ -205,7 +214,7 @@ def live_forecast(df, market):
         'forecast_file':str(path.relative_to(ROOT)),'rows':int(len(res)),
         'github_run_id':os.getenv('GITHUB_RUN_ID'),'github_sha':os.getenv('GITHUB_SHA'),
         'universe_name':'TOPIX500' if market=='JP' else 'SP500',
-        'universe_expected_count':500 if market=='JP' else int(len(res)),
+        'universe_expected_count':official_count if market=='JP' else int(len(res)),
         'universe_observed_count':int(len(res)),
         'universe_snapshot':universe_ref,
         'universe_snapshot_sha256':snapshot_hash

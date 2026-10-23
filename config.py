@@ -13,7 +13,7 @@ START = '2015-01-01'
 MIN_HISTORY = 252
 TOP_N = 10
 RANDOM_STATE = 42
-MODEL_VERSION = 'v1.3-topix500'
+MODEL_VERSION = 'v1.4-topix500-membership'
 
 # Japan: verified official JPX TOPIX 500 component snapshot, fetched via
 # topix500_universe.py and stored under data/universes/JP/.

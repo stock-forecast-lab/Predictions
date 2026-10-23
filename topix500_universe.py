@@ -25,12 +25,22 @@ SNAPSHOT_DIR = ROOT / 'data' / 'universes' / 'JP'
 SOURCE_URL = 'https://www.jpx.co.jp/news/6030/t13vrt00000262wd-att/mei2_12_size.pdf'
 CHANGE_DATE = date(2026, 10, 30)
 # Classification on the official document is 'old (as at Oct 7)' vs
-# 'new (effective Oct 30)'. Each snapshot has exactly 500 components.
+# 'new (effective Oct 30)'. The October 2026 snapshots have 493 (pre) and 501 (post) components.
 SNAPSHOTS = {
     'pre': SNAPSHOT_DIR / 'topix500_pre_20261030.csv',
     'post': SNAPSHOT_DIR / 'topix500_from_20261030.csv',
 }
 VALID_GROUPS = ('TOPIX Core30', 'TOPIX Large70', 'TOPIX Mid400')
+# Verified from the JPX 2026-10-07 table and its 2026-10-30 additions/removals.
+# TOPIX 500 is an index NAME; its live constituent count need not equal 500.
+# Before: 31 + 68 + 394 = 493.
+# Effective Oct 30: (31 + 4 - 5) + (68 + 10 - 8) + (394 + 21 - 14)
+#                   = 30 + 70 + 401 = 501.
+EXPECTED_COUNTS = {
+    'pre': {'TOPIX Core30': 31, 'TOPIX Large70': 68, 'TOPIX Mid400': 394},
+    'post': {'TOPIX Core30': 30, 'TOPIX Large70': 70, 'TOPIX Mid400': 401},
+}
+
 CODE_RE = re.compile(r'^(?:\d{4}|\d{3}[A-Z])$')
 
 
@@ -92,10 +102,11 @@ def parse_jpx_pdf(data: bytes):
                         new[code] = new_group
     for label, groups in [('pre', old), ('post', new)]:
         sizes = {group: sum(x == group for x in groups.values()) for group in VALID_GROUPS}
-        if sizes != {'TOPIX Core30': 30, 'TOPIX Large70': 70, 'TOPIX Mid400': 400}:
+        if sizes != EXPECTED_COUNTS[label]:
             raise ValueError(
                 f'Official TOPIX500 {label} extraction failed validation: '
-                f'{len(groups)} tickers and {sizes}. Refusing silent fallback.'
+                f'{len(groups)} tickers and {sizes}; expected {EXPECTED_COUNTS[label]}. ' \
+                'Refusing silent fallback.'
             )
     return old, new
 
@@ -136,15 +147,33 @@ def snapshot_path(as_of: date):
 
 
 def validate_snapshot(path: Path):
+    """Validate membership against the documented JPX October 2026 counts.
+
+    Do not pad the official universe with stocks outside the index merely
+    to force a round number of 500.
+    """
+    path = Path(path)
+    if path == SNAPSHOTS['pre']:
+        phase = 'pre'
+    elif path == SNAPSHOTS['post']:
+        phase = 'post'
+    else:
+        raise ValueError(f'Unrecognized official TOPIX 500 snapshot path: {path}')
     df = pd.read_csv(path, dtype=str)
-    expected = {'ticker', 'index_group'}
-    if not expected.issubset(df.columns):
-        raise ValueError(f'{path}: missing required columns {expected - set(df.columns)}')
-    if len(df) != 500 or df.ticker.nunique() != 500:
-        raise ValueError(f'{path}: expected exactly 500 distinct tickers, got {len(df)}')
+    expected_columns = {'ticker', 'index_group'}
+    if not expected_columns.issubset(df.columns):
+        raise ValueError(f'{path}: missing required columns {expected_columns - set(df.columns)}')
+    expected_counts = EXPECTED_COUNTS[phase]
+    expected_total = sum(expected_counts.values())
+    if len(df) != expected_total or df.ticker.nunique() != expected_total:
+        raise ValueError(
+            f'{path}: expected {expected_total} distinct tickers per JPX, '
+            f'got {len(df)} rows and {df.ticker.nunique()} distinct tickers')
     sizes = df.index_group.value_counts().to_dict()
-    if sizes != {'TOPIX Core30': 30, 'TOPIX Large70': 70, 'TOPIX Mid400': 400}:
-        raise ValueError(f'{path}: index group sizes do not match JPX definition: {sizes}')
+    if sizes != expected_counts:
+        raise ValueError(
+            f'{path}: JPX official index group counts mismatch: '
+            f'found {sizes}, expected {expected_counts}')
     return df
 
 

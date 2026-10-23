@@ -1,4 +1,4 @@
-# Stock Forecast V1.3（日米株価予測・GitHub Actions版）
+# Stock Forecast V1.4（日米株価予測・GitHub Actions版）
 
 このバージョンでは、日本株の5銘柄サンプルを **TOPIX500** に変更しました。米国株は従来どおりS&P500構成銘柄が対象です。
 
