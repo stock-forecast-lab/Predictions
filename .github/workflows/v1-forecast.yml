@@ -7,6 +7,11 @@ on:
         type: choice
         options: [BOTH, JP, US]
         default: BOTH
+      horizons:
+        description: Direct cumulative-return horizons (sessions)
+        type: choice
+        options: [ALL, NEXT_DAY]
+        default: ALL
   schedule:
     - cron: '30 7 * * 1-5'
     - cron: '30 22 * * 1-5'
@@ -37,7 +42,9 @@ jobs:
           sha256sum models/v2/context_data.py
       - run: pip install -r requirements.txt
       - name: Dashboard and archive regression tests
-        run: python -m pytest -q tests --ignore=tests/v2 --ignore=tests/v3
+        run: python -m pytest -q tests --ignore=tests/v1 --ignore=tests/v2 --ignore=tests/v3
+      - name: V1 multihorizon regression tests
+        run: python -m pytest -q tests/v1 -c tests/v1/pytest.ini
       - name: V2 regression tests
         run: python -m pytest -q tests/v2 -c tests/v2/pytest.ini
       - name: Run V1 forecasts
@@ -45,6 +52,7 @@ jobs:
           EVENT: ${{ github.event_name }}
           SCHEDULE: ${{ github.event.schedule }}
           REQUESTED_MARKET: ${{ inputs.market }}
+          REQUESTED_HORIZONS: ${{ inputs.horizons }}
         shell: bash
         run: |
           set -euo pipefail
@@ -52,12 +60,14 @@ jobs:
           if [[ "$EVENT" != 'workflow_dispatch' ]]; then
             if [[ "$SCHEDULE" == '30 7 * * 1-5' ]]; then market=JP; else market=US; fi
           fi
+          horizons=(1 5 20)
+          if [[ "$REQUESTED_HORIZONS" == NEXT_DAY ]]; then horizons=(1); fi
           status=0
           if [[ "$market" == JP || "$market" == BOTH ]]; then
-            python models/v1/run.py --market JP || status=1
+            python models/v1/run.py --market JP --horizons "${horizons[@]}" || status=1
           fi
           if [[ "$market" == US || "$market" == BOTH ]]; then
-            python models/v1/run.py --market US || status=1
+            python models/v1/run.py --market US --horizons "${horizons[@]}" || status=1
           fi
           exit "$status"
       - name: Append canonical records and refresh common dashboard
