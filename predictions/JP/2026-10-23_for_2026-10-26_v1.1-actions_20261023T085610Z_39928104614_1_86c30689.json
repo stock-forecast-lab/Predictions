@@ -1,0 +1,11 @@
+{
+  "market": "JP",
+  "model_version": "v1.1-actions",
+  "forecast_created_at_utc": "2026-10-23T08:56:10+00:00",
+  "data_last_observation_date": "2026-10-23",
+  "forecast_for_session_date": "2026-10-26",
+  "forecast_file": "predictions/JP/2026-10-23_for_2026-10-26_v1.1-actions_20261023T085610Z_39928104614_1_86c30689.csv",
+  "rows": 5,
+  "github_run_id": "39928104614",
+  "github_sha": "94050ab01342c68d54a8195323ccd99601a76814"
+}
