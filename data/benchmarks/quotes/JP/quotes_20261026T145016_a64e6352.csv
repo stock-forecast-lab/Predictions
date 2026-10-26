@@ -1,0 +1,2 @@
+date,close,market,benchmark,return_basis,source
+2026-10-26,62189.6484375,JP,NIKKEI225,price_index,Yahoo Finance ^N225
