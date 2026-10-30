@@ -1,0 +1,10 @@
+{
+  "market": "JP",
+  "rows": 35304,
+  "csv_file": "evaluation_20261030T143124_b61bec70.csv",
+  "csv_sha256": "bd142551b307041bdca28d9afee2fd9ea1a7dd717678a271c5933e3445675403",
+  "created_at_utc": "2026-10-30T14:31:24.518805+00:00",
+  "model_version": "v2.0.0",
+  "github_sha": "8ad629f2fbe2d3e85e68d0398d22daa5b76964a8",
+  "github_run_id": "41071706047"
+}
