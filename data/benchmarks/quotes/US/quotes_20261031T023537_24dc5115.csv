@@ -1,0 +1,2 @@
+date,close,market,benchmark,return_basis,source
+2026-10-30,7580.06982421875,US,SP500,price_index,Yahoo Finance ^GSPC
