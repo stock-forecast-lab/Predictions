@@ -1,0 +1,176 @@
+{
+  "market": "JP",
+  "data_last_observation_date": "2026-11-02",
+  "forecast_cutoff_at_utc": "2026-11-02 06:30:00+00:00",
+  "settings": {
+    "sets": [
+      "M1",
+      "M2",
+      "M3"
+    ],
+    "horizons": [
+      1,
+      5,
+      20
+    ],
+    "models": null,
+    "train_sessions": 756,
+    "profile": "standard",
+    "estimator_parameters": {
+      "rf_trees": 250,
+      "rf_depth": null,
+      "xgb_trees": 300,
+      "xgb_depth": 4,
+      "xgb_tree_method": "auto"
+    }
+  },
+  "settings_sha256": "2d741646ddef7fb56172850b1e46814cc20fe5fb6700d6f119163782201b377c",
+  "features": {
+    "M1": [
+      "ret1",
+      "ret5",
+      "ret20",
+      "ret60",
+      "vol20",
+      "vol60",
+      "vol_z20",
+      "hl20",
+      "ma20_gap",
+      "ma60_gap",
+      "mkt_ret1",
+      "rel_ret20"
+    ],
+    "M2": [
+      "ret1",
+      "ret5",
+      "ret20",
+      "ret60",
+      "vol20",
+      "vol60",
+      "vol_z20",
+      "hl20",
+      "ma20_gap",
+      "ma60_gap",
+      "mkt_ret1",
+      "rel_ret20",
+      "fx_ret1",
+      "fx_ret20",
+      "us2y",
+      "us2y_change20",
+      "us10y",
+      "us10y_change20",
+      "credit",
+      "credit_change20",
+      "vix",
+      "vix_change20",
+      "term_spread"
+    ],
+    "M3": [
+      "ret1",
+      "ret5",
+      "ret20",
+      "ret60",
+      "vol20",
+      "vol60",
+      "vol_z20",
+      "hl20",
+      "ma20_gap",
+      "ma60_gap",
+      "mkt_ret1",
+      "rel_ret20",
+      "fx_ret1",
+      "fx_ret20",
+      "us2y",
+      "us2y_change20",
+      "us10y",
+      "us10y_change20",
+      "credit",
+      "credit_change20",
+      "vix",
+      "vix_change20",
+      "term_spread",
+      "us_cpi_yoy",
+      "jp_ip_yoy",
+      "jp_unemployment",
+      "jp_short_rate",
+      "jp10y"
+    ]
+  },
+  "universe": {
+    "name": "TOPIX500",
+    "snapshot": "data/universes/JP/2026-11-02_7d98c12a4754.csv",
+    "sha256": "7d98c12a4754ef11bb8ecba9cfbefd746f4d9b867de5dbba1234a3bac82bd85b",
+    "count": 501
+  },
+  "context_sources": {
+    "DEXJPUS": {
+      "sha256": "fccf0ac26fac111945f95202c6ac88a2db7203b8b40406360198bb3315dcb632",
+      "last_available_at": "2026-10-28 00:00:00+00:00",
+      "last_observation_date": "2026-10-23 00:00:00",
+      "n_vintage_records": 7514
+    },
+    "DGS2": {
+      "sha256": "8f9940b2d3ed9c7850dd143144403f3e437a83e15904f468f6ec9457c9d3decc",
+      "last_available_at": "2026-11-01 00:00:00+00:00",
+      "last_observation_date": "2026-10-29 00:00:00",
+      "n_vintage_records": 7521
+    },
+    "DGS10": {
+      "sha256": "807c64c8a8b23610aceda5f44f3315e9d3a6610be959ef8f5fcf1ab2d8907f7b",
+      "last_available_at": "2026-11-01 00:00:00+00:00",
+      "last_observation_date": "2026-10-29 00:00:00",
+      "n_vintage_records": 7523
+    },
+    "BAA10Y": {
+      "sha256": "29067a7569cd7b32231d0f5181fc7604d695a8d340458ae76f949dd5acaa3bf1",
+      "last_available_at": "2026-11-01 00:00:00+00:00",
+      "last_observation_date": "2026-10-29 00:00:00",
+      "n_vintage_records": 7533
+    },
+    "VIXCLS": {
+      "sha256": "0ddf7766913f0ebc85da7dadbce9aaf11afc909c97c7dbc15f99b5a9942a2435",
+      "last_available_at": "2026-11-01 00:00:00+00:00",
+      "last_observation_date": "2026-10-30 00:00:00",
+      "n_vintage_records": 7528
+    },
+    "CPIAUCSL": {
+      "sha256": "2c56f9a66576193089249566a386a88d06965e5cbf13288f174381492afea4d2",
+      "last_available_at": "2026-10-16 00:00:00+00:00",
+      "last_observation_date": "2026-09-01 00:00:00",
+      "n_vintage_records": 1005
+    },
+    "JPNPRINTO01GYSAM": {
+      "sha256": "374e552d707abd23ff884bb59f82be947ad9573196ffc16191740936b7e1e15b",
+      "last_available_at": "2026-10-17 00:00:00+00:00",
+      "last_observation_date": "2026-07-01 00:00:00",
+      "n_vintage_records": 1416
+    },
+    "LRHUTTTTJPM156S": {
+      "sha256": "ab527ce2ad8764b3067320629e850c74ef1f9c18b1c034086b4096be2ce033c8",
+      "last_available_at": "2026-10-17 00:00:00+00:00",
+      "last_observation_date": "2026-08-01 00:00:00",
+      "n_vintage_records": 414
+    },
+    "IRSTCI01JPM156N": {
+      "sha256": "a8b1d4dee4ef6185db0550a8aef2565c0575cd5d63a1c04caeb86fe01b115725",
+      "last_available_at": "2026-10-17 00:00:00+00:00",
+      "last_observation_date": "2026-09-01 00:00:00",
+      "n_vintage_records": 433
+    },
+    "IRLTLT01JPM156N": {
+      "sha256": "124f30e2795a8739bd56c721beedf40e6056a1f5c8035ec04a72c76682bc0193",
+      "last_available_at": "2026-10-17 00:00:00+00:00",
+      "last_observation_date": "2026-09-01 00:00:00",
+      "n_vintage_records": 478
+    }
+  },
+  "vintage_delay_days": 2,
+  "rows": 35928,
+  "survivorship_bias_in_historical_training": true,
+  "csv_file": "2026-11-02_v2.0.0_20261102T174627_a9c94ee5.csv",
+  "csv_sha256": "a0655d201184940a3db1a22651ecc62a1657507beae0ade7d2539bb322105c4a",
+  "created_at_utc": "2026-11-02T17:46:28.093148+00:00",
+  "model_version": "v2.0.0",
+  "github_sha": "e00255d19f30ab9999559758c781c289e3315225",
+  "github_run_id": "41490374181"
+}
