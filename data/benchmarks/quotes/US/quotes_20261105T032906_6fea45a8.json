@@ -1,0 +1,6 @@
+{
+  "kind": "benchmark_quotes",
+  "csv_file": "quotes_20261105T032906_6fea45a8.csv",
+  "csv_sha256": "83ba038b9158cf2c89df7ae1c7702ff6aff81d95c5a75fc08f02022fc3f57342",
+  "retrieved_at_utc": "2026-11-05T03:29:06.907718+00:00"
+}

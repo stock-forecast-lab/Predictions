@@ -1,0 +1,7 @@
+{
+  "market": "US",
+  "model_version": "v1.5-multihorizon",
+  "rows": 1004,
+  "csv_file": "evaluation_US_v1.5-multihorizon_20261105T024348Z_41956768197_1_290afd08.csv",
+  "csv_sha256": "cac286ea22c4acb8431d7eac85c3f0880556285050d67a42df24617cbb82ccec"
+}
