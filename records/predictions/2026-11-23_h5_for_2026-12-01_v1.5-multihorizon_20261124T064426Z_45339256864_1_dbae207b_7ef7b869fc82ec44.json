@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "source_file": "predictions/US/2026-11-23_h5_for_2026-12-01_v1.5-multihorizon_20261124T064426Z_45339256864_1_dbae207b.csv",
+  "source_sha256": "b4a17975e3dabb1c7fdec4a62b5be28f34666ca4dfcd48d6155960194c401455",
+  "csv_file": "2026-11-23_h5_for_2026-12-01_v1.5-multihorizon_20261124T064426Z_45339256864_1_dbae207b_7ef7b869fc82ec44.csv",
+  "csv_sha256": "96822a4a0076d914d29bb5e0f98b784d7a7a6f7bccae46c87f7adac9b256aedb"
+}
